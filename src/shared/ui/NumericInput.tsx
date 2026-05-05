@@ -2,7 +2,7 @@ import type { InputHTMLAttributes } from 'react'
 
 import { Field } from './Field'
 
-type NumericInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type'> & {
+type NumericInputProps = Omit<InputHTMLAttributes<HTMLInputElement>, 'type' | 'size'> & {
   align?: 'start' | 'center'
   hint?: string
   label: string

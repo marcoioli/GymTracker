@@ -157,8 +157,8 @@ function WorkoutSessionForm({
               </div>
 
               <div className="session-set-stack">
-                {exerciseDraft.sets.map((set, setIndex) => (
-                  <div className="session-set-row" key={set.id}>
+                {exerciseDraft.sets.map((_, setIndex) => (
+                  <div className="session-set-row" key={`${exercise.id}:set-${setIndex + 1}`}>
                     <div className="session-set-row__label">
                       <div className="session-set-row__title-line">
                         <strong>Serie {setIndex + 1}</strong>

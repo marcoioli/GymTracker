@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 
 import { Button, StatusBanner } from '../shared/ui'
 import {
+  type BeforeInstallPromptEvent,
   bootstrapPwaRegistration,
   isStandaloneMode,
   setRuntimeState,

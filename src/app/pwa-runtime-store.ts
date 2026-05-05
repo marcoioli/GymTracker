@@ -1,6 +1,6 @@
 import { useSyncExternalStore } from 'react'
 
-type BeforeInstallPromptEvent = Event & {
+export type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{
     outcome: 'accepted' | 'dismissed'

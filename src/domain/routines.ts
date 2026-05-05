@@ -298,7 +298,7 @@ export function resolveActiveRoutine(routines: Routine[], activeRoutineId: strin
   const validRoutineIds = new Set(routines.map((routine) => routine.id))
   const validPointer = activeRoutineId && validRoutineIds.has(activeRoutineId) ? activeRoutineId : null
   const activeCandidates = routines.filter((routine) => routine.status === 'active').sort((left, right) => right.updatedAt.localeCompare(left.updatedAt))
-  const chosenRoutine = (validPointer ? routines.find((routine) => routine.id === validPointer) ?? null : null) ?? activeCandidates[0] ?? null
+  const chosenRoutine = validPointer ? (routines.find((routine) => routine.id === validPointer) ?? activeCandidates[0] ?? null) : (activeCandidates[0] ?? null)
 
   return {
     repairedState: Boolean(activeRoutineId && !validPointer) || activeCandidates.length > 1 || (chosenRoutine ? chosenRoutine.status !== 'active' : false),

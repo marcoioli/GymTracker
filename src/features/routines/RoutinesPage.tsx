@@ -13,7 +13,6 @@ import {
   type Routine,
   type RoutineDay,
   type RoutineExercise,
-  type WeeklyMuscleVolume,
   type RoutineWeek
 } from '../../domain/routines'
 import { EmptyState, Field, FieldInput, FieldSelect, StatusBanner } from '../../shared/ui'
