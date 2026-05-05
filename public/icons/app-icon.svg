@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">GymTracker app icon</title>
+  <desc id="desc">A strong GT monogram inside a rounded dark square.</desc>
+  <rect width="512" height="512" rx="120" fill="#101826"/>
+  <rect x="56" y="56" width="400" height="400" rx="96" fill="#151f31" stroke="#f97316" stroke-width="12"/>
+  <path d="M120 180h170v44h-122v64h98v44h-98v92h-48zm180 0h92c26 0 48 22 48 48v104c0 26-22 48-48 48h-92v-44h72c11 0 20-9 20-20v-72h-92v-44h92v-12c0-11-9-20-20-20h-72z" fill="#22c55e"/>
+</svg>

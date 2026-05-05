@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.DS_Store
+Thumbs.db
+
+# Local tool/runtime artifacts
+.opencode/node_modules/
+__pycache__/
+*.pyc

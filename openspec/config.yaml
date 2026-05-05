@@ -1,0 +1,64 @@
+schema: spec-driven
+
+context: |
+  Tech stack: React + TypeScript + Vite + PWA (planned baseline)
+  Architecture: local-first, offline-first, single-user mobile web app
+  Product focus: gym workout tracking with editable routines and historical analytics
+  Testing: not installed yet; to be added during implementation foundation
+  Style: mobile-first UI, high-contrast athletic visual system, accessible form inputs
+
+strict_tdd: false
+
+testing:
+  detected: 2026-05-04
+  strict_tdd_reason: No test runner exists yet in the empty workspace
+  test_runner:
+    available: false
+    framework: null
+    command: null
+  layers:
+    unit:
+      available: false
+      tool: null
+    integration:
+      available: false
+      tool: null
+    e2e:
+      available: false
+      tool: null
+  coverage:
+    available: false
+    command: null
+  quality_tools:
+    linter:
+      available: false
+      command: null
+    type_checker:
+      available: false
+      command: null
+    formatter:
+      available: false
+      command: null
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include sequence diagrams for complex flows
+    - Document architecture decisions with rationale
+  tasks:
+    - Group tasks by phase (foundation, domain, UX, analytics)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow existing code patterns and conventions
+    - Keep the workout session flow fast for mobile use
+  verify:
+    - Run tests when infrastructure exists
+    - Compare implementation against every spec scenario
+  archive:
+    - Warn before merging destructive deltas
