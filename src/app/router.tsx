@@ -15,10 +15,10 @@ const BackupPage = lazy(async () => ({ default: (await import('../features/backu
 
 const navigationItems = [
   { to: '/', label: 'Inicio', icon: 'home', helper: 'Resumen del día', end: true },
-  { to: '/routines', label: 'Rutinas', icon: 'routines', helper: 'Plan activo y semanas' },
-  { to: '/history', label: 'Historial', icon: 'history', helper: 'Sesiones guardadas' },
-  { to: '/analytics', label: 'Métricas', icon: 'analytics', helper: 'Progreso y tendencias' },
-  { to: '/backup', label: 'Respaldo', icon: 'backup', helper: 'Exportar o restaurar' }
+  { to: '/routines', label: 'Rutinas', icon: 'routines', helper: 'Plan activo y semanas', end: false },
+  { to: '/history', label: 'Historial', icon: 'history', helper: 'Sesiones guardadas', end: false },
+  { to: '/analytics', label: 'Métricas', icon: 'analytics', helper: 'Progreso y tendencias', end: false },
+  { to: '/backup', label: 'Respaldo', icon: 'backup', helper: 'Exportar o restaurar', end: false }
 ] as const
 
 type NavigationIconName = (typeof navigationItems)[number]['icon']
