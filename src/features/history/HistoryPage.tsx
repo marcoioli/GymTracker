@@ -74,9 +74,9 @@ export function HistoryPage() {
   return (
     <>
       <PageSection
-        description="Revisá sesiones guardadas como snapshots reales. Si la plantilla cambió después, el historial NO se reescribe, y así tiene que ser."
-        eyebrow="Historial"
-        title="Tus entrenamientos guardados"
+        description="Historial real de sesiones guardadas y snapshots de cada ejercicio."
+        eyebrow="History"
+        title="Workout History"
         titleId="history-title"
       >
         {sessions.length === 0 ? (
@@ -143,7 +143,7 @@ export function HistoryPage() {
 
       {filteredSessions.length > 0 ? (
         <PageSection
-          description="Elegí una sesión para revisar el snapshot exacto que quedó guardado en ese momento."
+          description="Elegí una sesión y revisá exactamente qué quedó guardado." 
           title={`Sesiones encontradas: ${filteredSessions.length}`}
           titleId="history-session-list-title"
         >

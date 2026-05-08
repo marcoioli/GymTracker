@@ -6,12 +6,19 @@ export const DEFAULT_MUSCLE_GROUP = 'PG'
 export type RoutineStatus = 'active' | 'paused' | 'completed'
 export type MuscleGroup = (typeof MUSCLE_GROUPS)[number]
 
+export type RoutineExerciseSetReference = {
+  id: string
+  repsTarget: string
+  rirTarget: string
+}
+
 export type RoutineExercise = {
   id: string
   name: string
   targetSets: number
   targetRir: number | null
   muscle: MuscleGroup
+  setReferences?: RoutineExerciseSetReference[]
 }
 
 export type RoutineDay = {
@@ -68,6 +75,7 @@ export type WeeklyMuscleVolume = Record<MuscleGroup, number>
 
 type LegacyRoutineExercise = Omit<RoutineExercise, 'muscle'> & {
   muscle?: unknown
+  setReferences?: unknown
 }
 
 type LegacyRoutineDay = Omit<RoutineDay, 'exercises'> & {
@@ -104,10 +112,70 @@ export function isMuscleGroup(value: unknown): value is MuscleGroup {
 }
 
 export function normalizeRoutineExercise(exercise: LegacyRoutineExercise): RoutineExercise {
+  const setReferences = normalizeExerciseSetReferences(exercise.setReferences, exercise.targetSets, exercise.targetRir)
+
   return {
     ...exercise,
-    muscle: isMuscleGroup(exercise.muscle) ? exercise.muscle : DEFAULT_MUSCLE_GROUP
+    targetSets: setReferences.length,
+    targetRir: resolveExerciseTargetRir(setReferences, exercise.targetRir),
+    muscle: isMuscleGroup(exercise.muscle) ? exercise.muscle : DEFAULT_MUSCLE_GROUP,
+    setReferences
   }
+}
+
+export function createExerciseSetReference(seed?: Partial<Omit<RoutineExerciseSetReference, 'id'>>): RoutineExerciseSetReference {
+  return {
+    id: crypto.randomUUID(),
+    repsTarget: seed?.repsTarget ?? '',
+    rirTarget: seed?.rirTarget ?? ''
+  }
+}
+
+function normalizeExerciseSetReferences(
+  value: unknown,
+  targetSets: number,
+  targetRir: number | null | undefined
+): RoutineExerciseSetReference[] {
+  const legacyReferences = Array.isArray(value)
+    ? value
+        .filter((entry): entry is Partial<RoutineExerciseSetReference> => Boolean(entry) && typeof entry === 'object')
+        .map((entry) =>
+          createExerciseSetReference({
+            repsTarget: typeof entry.repsTarget === 'string' ? entry.repsTarget : '',
+            rirTarget: typeof entry.rirTarget === 'string' ? entry.rirTarget : ''
+          })
+        )
+    : []
+
+  const desiredCount = legacyReferences.length > 0 ? legacyReferences.length : Number.isInteger(targetSets) && targetSets >= 1 ? targetSets : 1
+
+  return Array.from({ length: desiredCount }, (_, index) => {
+    const current = legacyReferences[index]
+
+    if (current) {
+      return current
+    }
+
+    return createExerciseSetReference({
+      repsTarget: '',
+      rirTarget: targetRir !== null && targetRir !== undefined ? String(targetRir) : ''
+    })
+  })
+}
+
+function resolveExerciseTargetRir(
+  setReferences: RoutineExerciseSetReference[],
+  fallback: number | null | undefined
+): number | null {
+  for (const reference of setReferences) {
+    const normalized = reference.rirTarget.trim()
+
+    if (/^\d+$/.test(normalized)) {
+      return Number(normalized)
+    }
+  }
+
+  return typeof fallback === 'number' && Number.isInteger(fallback) && fallback >= 0 ? fallback : null
 }
 
 export function normalizeRoutineWeek(week: LegacyRoutineWeek): RoutineWeek {

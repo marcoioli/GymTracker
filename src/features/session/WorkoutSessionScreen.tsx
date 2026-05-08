@@ -1,10 +1,10 @@
-import { type Dispatch, type SetStateAction, useMemo, useState } from 'react'
+import { type Dispatch, type SetStateAction, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { db } from '../../db/database'
 import { getRoutineDaySelection, normalizeExerciseName } from '../../domain/routines'
-import { Button, Card, EmptyState, NumericInput, PageSection, StatusBanner } from '../../shared/ui'
+import { Button, Card, EmptyState, PageSection, StatusBanner } from '../../shared/ui'
 import {
   getPreviousSessionReferences,
   getWorkoutDayLabel,
@@ -86,12 +86,33 @@ function WorkoutSessionForm({
   )
   const [isSaving, setIsSaving] = useState<'completed' | 'ended-early' | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [elapsedLabel, setElapsedLabel] = useState(() => formatElapsed(startedAt, new Date().toISOString()))
+
+  const enteredVolume = useMemo(
+    () =>
+      exerciseDrafts.reduce(
+        (total, exercise) =>
+          total +
+          exercise.sets.reduce((exerciseTotal, set) => exerciseTotal + (Number(set.reps || 0) * Number(set.weightKg || 0) || 0), 0),
+        0
+      ),
+    [exerciseDrafts]
+  )
+  const workingSetCount = useMemo(() => exerciseDrafts.reduce((total, exercise) => total + exercise.sets.length, 0), [exerciseDrafts])
   const savingMessage =
     isSaving === 'completed'
       ? 'Guardando sesión finalizada...'
       : isSaving === 'ended-early'
         ? 'Guardando sesión terminada antes...'
         : null
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setElapsedLabel(formatElapsed(startedAt, new Date().toISOString()))
+    }, 1000)
+
+    return () => window.clearInterval(timer)
+  }, [startedAt])
 
   async function handleFinish(status: 'completed' | 'ended-early') {
     setIsSaving(status)
@@ -118,86 +139,96 @@ function WorkoutSessionForm({
   return (
     <PageSection
       actions={
-        <Button size="touch" variant="ghost" onClick={() => navigateHome()}>
+        <Button size="compact" variant="ghost" onClick={() => navigateHome()}>
           Salir
         </Button>
       }
-      description={`${getWorkoutDayLabel(selection)} · ${routineName}`}
-      eyebrow="Sesión en curso"
+      description={routineName}
+      eyebrow="Track Workout"
       title={selection.day.label}
       titleId="workout-session-title"
     >
-      <Card as="article" className="session-summary-card" variant="highlight">
-        <div className="day-option__meta">
-          <strong>{selection.day.exercises.length} ejercicios cargados</strong>
-          <span className="status-pill status-pill--active">Flujo rápido</span>
+      <Card as="article" className="track-workout-hero" variant="highlight">
+        <div className="track-workout-hero__field">
+          <span>Workout Name</span>
+          <strong>{selection.day.label}</strong>
         </div>
-        <p className="routine-summary">Cada bloque junta serie, referencia previa y carga actual para que escanees y registres sin fricción.</p>
+        <div className="track-workout-hero__field track-workout-hero__field--muted">
+          <span>Add description or note</span>
+          <strong>{getWorkoutDayLabel(selection)}</strong>
+        </div>
+
+        <div className="track-workout-hero__stats">
+          <SessionStat value={`${workingSetCount}`} label="Working Sets" />
+          <SessionStat value={elapsedLabel} label="Duration" />
+          <SessionStat value={`${Math.round(enteredVolume).toLocaleString('es-AR')} kg`} label="Logged Volume" />
+        </div>
       </Card>
 
       {savingMessage ? <StatusBanner tone="info">{savingMessage}</StatusBanner> : null}
 
       {errorMessage ? <StatusBanner tone="error">{errorMessage}</StatusBanner> : null}
 
-      <div className="session-stack">
+      <div className="track-workout-stack">
         {selection.day.exercises.map((exercise, exerciseIndex) => {
           const exerciseDraft = exerciseDrafts[exerciseIndex]
           const reference = previousReferences[exercise.id] ?? previousReferences[normalizeExerciseName(exercise.name)]
 
           return (
-            <Card as="article" className="session-exercise-card" key={exercise.id}>
-              <div className="session-exercise-card__header">
+            <Card as="article" className="track-exercise-card" key={exercise.id}>
+              <div className="track-exercise-card__header">
                 <div>
                   <h3 className="routine-card-title">{exercise.name}</h3>
                   <p className="routine-summary">
-                    {exercise.targetSets} series {exercise.targetRir !== null ? `· RIR objetivo ${exercise.targetRir}` : ''}
+                    {exercise.targetSets} series {exercise.targetRir !== null ? `· objetivo RIR ${exercise.targetRir}` : ''}
                   </p>
                 </div>
-                <span className="session-exercise-card__badge">{exerciseDraft.sets.length} bloques</span>
+                <span className="track-exercise-card__badge">{exerciseDraft.sets.length} sets</span>
               </div>
 
-              <div className="session-set-stack">
-                {exerciseDraft.sets.map((_, setIndex) => (
-                  <div className="session-set-row" key={`${exercise.id}:set-${setIndex + 1}`}>
-                    <div className="session-set-row__label">
-                      <div className="session-set-row__title-line">
-                        <strong>Serie {setIndex + 1}</strong>
-                        <span className="session-inline-label">Carga rápida</span>
-                      </div>
-                      <PreviousReference reference={reference} setIndex={setIndex} />
-                    </div>
+              <div className="track-set-grid track-set-grid--head" aria-hidden="true">
+                <span>Set</span>
+                <span>Previous</span>
+                <span>Weight</span>
+                <span>Reps</span>
+                <span>RIR</span>
+              </div>
 
-                    <div className="session-set-grid">
-                      <NumericInput
-                        align="center"
-                        hint="Reps"
-                        label={`Reps serie ${setIndex + 1}`}
-                        placeholder="--"
-                        size="touch"
-                        value={exerciseDraft.sets[setIndex]?.reps ?? ''}
-                        onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'reps', event.target.value)}
-                      />
+              <div className="track-set-stack">
+                {exerciseDraft.sets.map((set, setIndex) => (
+                  <div className="track-set-grid" key={`${exercise.id}:set-${setIndex + 1}`}>
+                    <span className="track-set-grid__index">{setIndex + 1}</span>
+                    <span className="track-set-grid__previous">{formatCompactReference(reference, setIndex)}</span>
 
-                      <NumericInput
-                        align="center"
-                        hint="Peso kg"
-                        label={`Peso kg serie ${setIndex + 1}`}
-                        placeholder="--"
-                        size="touch"
-                        value={exerciseDraft.sets[setIndex]?.weightKg ?? ''}
-                        onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'weightKg', event.target.value)}
-                      />
+                    <input
+                      aria-label={`Peso kg serie ${setIndex + 1}`}
+                      className="track-set-input"
+                      inputMode="numeric"
+                      placeholder="24"
+                      type="text"
+                      value={set.weightKg ?? ''}
+                      onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'weightKg', event.target.value)}
+                    />
 
-                      <NumericInput
-                        align="center"
-                        hint="RIR real"
-                        label={`RIR real serie ${setIndex + 1}`}
-                        placeholder="--"
-                        size="touch"
-                        value={exerciseDraft.sets[setIndex]?.actualRir ?? ''}
-                        onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'actualRir', event.target.value)}
-                      />
-                    </div>
+                    <input
+                      aria-label={`Reps serie ${setIndex + 1}`}
+                      className="track-set-input"
+                      inputMode="numeric"
+                      placeholder="12"
+                      type="text"
+                      value={set.reps ?? ''}
+                      onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'reps', event.target.value)}
+                    />
+
+                    <input
+                      aria-label={`RIR real serie ${setIndex + 1}`}
+                      className="track-set-input track-set-input--subtle"
+                      inputMode="numeric"
+                      placeholder="2"
+                      type="text"
+                      value={set.actualRir ?? ''}
+                      onChange={(event) => updateExerciseDraft(setExerciseDrafts, exerciseIndex, setIndex, 'actualRir', event.target.value)}
+                    />
                   </div>
                 ))}
               </div>
@@ -218,18 +249,36 @@ function WorkoutSessionForm({
   )
 }
 
-function PreviousReference({ reference, setIndex }: { reference?: PreviousExerciseReference; setIndex: number }) {
+function SessionStat({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="track-session-stat">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+function formatElapsed(startedAt: string, now: string) {
+  const diffMs = Math.max(new Date(now).getTime() - new Date(startedAt).getTime(), 0)
+  const totalSeconds = Math.floor(diffMs / 1000)
+  const hours = Math.floor(totalSeconds / 3600)
+  const minutes = Math.floor((totalSeconds % 3600) / 60)
+  const seconds = totalSeconds % 60
+
+  return `${hours > 0 ? `${hours}:` : ''}${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
+function formatCompactReference(reference: PreviousExerciseReference | undefined, setIndex: number) {
   const setReference = reference?.sets[setIndex]
 
   if (!setReference) {
-    return <span className="session-reference session-reference--empty">Sin referencia previa para esta serie</span>
+    return '—'
   }
 
-  return (
-    <span className="session-reference">
-      Última referencia: {setReference.reps ?? '—'} reps · {setReference.weightKg ?? '—'} kg · RIR {setReference.actualRir ?? '—'}
-    </span>
-  )
+  const weight = setReference.weightKg !== null ? `${setReference.weightKg} kg` : '— kg'
+  const reps = setReference.reps !== null ? `${setReference.reps}` : '—'
+
+  return `(${weight}) × ${reps}`
 }
 
 function updateExerciseDraft(

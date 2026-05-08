@@ -17,9 +17,9 @@ export function MorePage() {
   return (
     <>
       <PageSection
-        description="Centro de control para módulos secundarios, respaldo local y progreso general sin ensuciar la navegación principal."
-        eyebrow="Más"
-        title="Tu panel secundario"
+        description="Analytics, backup y estado general de la app."
+        eyebrow="More"
+        title="More"
         titleId="more-title"
       >
         <Card as="article" className="profile-spotlight-card" variant="highlight">
@@ -47,7 +47,7 @@ export function MorePage() {
       </PageSection>
 
       <PageSection
-        description="Solo aparecen como accesos principales los módulos que YA existen de verdad en la app. Nada de vender humo visual."
+        description="Módulos reales disponibles ahora mismo."
         title="Módulos disponibles"
         titleId="more-modules-title"
       >

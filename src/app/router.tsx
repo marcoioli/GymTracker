@@ -70,6 +70,9 @@ function RootLayout() {
   const navigate = useNavigate()
   const mainRef = useRef<HTMLElement | null>(null)
   const suggestedWorkout = useLiveQuery(() => getSuggestedWorkoutDay(), [], undefined)
+  const isWorkoutsHub = location.pathname === '/' || location.pathname === '/routines'
+  const isTrackerRoute = location.pathname === '/'
+  const showBottomNav = !location.pathname.startsWith('/session/')
 
   useEffect(() => {
     mainRef.current?.focus()
@@ -108,38 +111,64 @@ function RootLayout() {
 
       <AppStatusDeck />
 
+      {isWorkoutsHub ? (
+        <header className="workouts-shell-header" aria-label="Encabezado de workouts">
+          <div className="workouts-shell-header__top">
+            <h1>Workouts</h1>
+            <span aria-hidden="true" className="workouts-shell-header__menu">
+              <span />
+              <span />
+              <span />
+            </span>
+          </div>
+
+          <nav aria-label="Cambiar vista de workouts" className="workouts-segmented-nav">
+            <NavLink className={({ isActive }) => `workouts-segmented-nav__link${isActive ? ' active' : ''}`} end to="/">
+              Tracker
+            </NavLink>
+            <NavLink className={({ isActive }) => `workouts-segmented-nav__link${isActive ? ' active' : ''}`} to="/routines">
+              Routines
+            </NavLink>
+          </nav>
+
+          {!isTrackerRoute ? (
+            <button aria-label={fabCopy.label} className="workouts-primary-cta" type="button" onClick={handleQuickStart}>
+              <span aria-hidden="true">＋</span>
+              <span>TRACK NEW WORKOUT</span>
+            </button>
+          ) : null}
+        </header>
+      ) : null}
+
       <main className="app-main app-main--mobile" id="main-content" ref={mainRef} tabIndex={-1}>
         <Suspense fallback={<RouteLoadingState />}>
-          <Outlet />
+          <div className="route-stage" key={`${location.pathname}${location.search}`}>
+            <Outlet />
+          </div>
         </Suspense>
       </main>
 
-      <button aria-label={fabCopy.label} className="quick-action-fab" type="button" onClick={handleQuickStart}>
-        <span className="quick-action-fab__plus" aria-hidden="true">
-          +
-        </span>
-        <span className="quick-action-fab__label">{fabCopy.helper}</span>
-      </button>
+      {showBottomNav ? (
+        <nav aria-label="Navegación principal" className="bottom-nav">
+          {navigationItems.map(({ to, label, icon }) => {
+            const isActive =
+              to === '/'
+                ? location.pathname === '/'
+                : to === '/more'
+                  ? location.pathname === '/more' || location.pathname.startsWith('/analytics') || location.pathname.startsWith('/backup')
+                  : location.pathname.startsWith(to)
 
-      <nav aria-label="Navegación principal" className="bottom-nav">
-        {navigationItems.map(({ to, label, icon }) => {
-          const isActive =
-            to === '/'
-              ? location.pathname === '/'
-              : to === '/more'
-                ? location.pathname === '/more' || location.pathname.startsWith('/analytics') || location.pathname.startsWith('/backup')
-                : location.pathname.startsWith(to)
-
-          return (
-            <NavLink key={to} className={`bottom-nav__item${isActive ? ' active' : ''}`} to={to} end={to === '/'}>
-              <span className="bottom-nav__icon" aria-hidden="true">
-                <NavigationIcon name={icon} />
-              </span>
-              <span className="bottom-nav__label">{label}</span>
-            </NavLink>
-          )
-        })}
-      </nav>
+            return (
+              <NavLink aria-label={label} key={to} className={`bottom-nav__item${isActive ? ' active' : ''}`} to={to} end={to === '/'}>
+                <span className="bottom-nav__icon" aria-hidden="true">
+                  <NavigationIcon name={icon} />
+                </span>
+                <span className="bottom-nav__label">{label}</span>
+              </NavLink>
+            )
+          })}
+        </nav>
+      ) : null}
     </div>
   )
 }
