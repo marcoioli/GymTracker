@@ -7,10 +7,10 @@ describe('App foundation', () => {
     render(<App />)
 
     expect(screen.getByRole('link', { name: /saltar al contenido/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /tu entrenamiento en un solo lugar/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /hola/i })).toBeInTheDocument()
     expect(screen.getByRole('main')).toHaveAttribute('id', 'main-content')
-    expect(screen.getByRole('button', { name: /crear o activar rutina/i })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ir a rutinas/i })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /rutinas/i })).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: /respaldo/i })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /más/i })).toBeInTheDocument()
   })
 })

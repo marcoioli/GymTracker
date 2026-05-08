@@ -1,4 +1,5 @@
 import { useRef, useState, type ChangeEvent } from 'react'
+import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { db } from '../../db/database'
@@ -96,106 +97,128 @@ export function BackupPage() {
   }
 
   return (
-    <PageSection
-      description="Exportá una copia JSON versionada o importá un archivo local validado. Nada de cloud, nada de sync raro: todo queda bajo tu control en este dispositivo."
-      eyebrow="Utilidad local"
-      title="Respaldo y restore"
-      titleId="backup-title"
-    >
-      <div className="backup-stack">
-        <Card as="article" className="backup-card">
-          <div className="backup-card__header">
-            <div>
-              <h3 className="routine-card-title">Exportar backup JSON</h3>
-              <p className="routine-summary">Incluye appState, rutinas, catálogo de ejercicios y sesiones en un archivo local versionado.</p>
+    <>
+      <PageSection
+        description="Todo queda bajo tu control: exportación versionada, validación previa y restore destructivo solo con confirmación explícita."
+        eyebrow="Respaldo"
+        title="Cuidá tus datos locales"
+        titleId="backup-title"
+      >
+        <div className="backup-stack">
+          <Card as="article" className="backup-card" variant="highlight">
+            <div className="backup-card__header">
+              <div>
+                <h3 className="routine-card-title">Estado actual del dispositivo</h3>
+                <p className="routine-summary">Esto es lo que hoy vive adentro de tu navegador local.</p>
+              </div>
+              <span className="status-pill status-pill--active">Local only</span>
             </div>
-            <span className="status-pill status-pill--active">Local only</span>
-          </div>
 
-          <BackupCounts counts={currentData} title="Datos actuales en este dispositivo" />
+            <BackupCounts counts={currentData} title="Datos actuales en este dispositivo" />
+          </Card>
 
-          <Button disabled={isExporting} fullWidth size="touch" onClick={handleExport}>
-            {isExporting ? 'Exportando backup...' : 'Exportar backup'}
-          </Button>
-        </Card>
-
-        <Card as="article" className="backup-card">
-          <div className="backup-card__header">
-            <div>
-              <h3 className="routine-card-title">Importar backup local</h3>
-              <p className="routine-summary">Primero validamos estructura y versión. Recién después te dejamos confirmar el reemplazo destructivo.</p>
+          <Card as="article" className="backup-card">
+            <div className="backup-card__header">
+              <div>
+                <h3 className="routine-card-title">Exportar backup JSON</h3>
+                <p className="routine-summary">Incluye appState, rutinas, catálogo de ejercicios y sesiones en un archivo local versionado.</p>
+              </div>
             </div>
-            <span className="status-pill status-pill--paused">Validación previa</span>
-          </div>
 
-          <input
-            ref={fileInputRef}
-            accept="application/json,.json"
-            aria-label="Seleccionar archivo de backup"
-            className="backup-file-input"
-            type="file"
-            onChange={handleImportSelection}
-          />
-
-          <div className="backup-actions-row">
-            <Button fullWidth size="touch" variant="secondary" onClick={() => fileInputRef.current?.click()}>
-              Elegir archivo JSON
+            <Button disabled={isExporting} fullWidth size="touch" onClick={handleExport}>
+              {isExporting ? 'Exportando backup...' : 'Exportar backup'}
             </Button>
-          </div>
+          </Card>
 
-          {pendingBackup && pendingCounts ? (
-            <Card as="section" className="backup-preview-card" aria-labelledby="backup-preview-title" variant="highlight">
-              <div className="backup-card__header">
-                <div>
-                  <p className="eyebrow">Archivo validado</p>
-                  <h3 className="section-title" id="backup-preview-title">
-                    Listo para restaurar
-                  </h3>
-                  <p className="empty-note backup-file-name">{pendingFileName ?? 'Backup local cargado'}</p>
+          <Card as="article" className="backup-card">
+            <div className="backup-card__header">
+              <div>
+                <h3 className="routine-card-title">Importar backup local</h3>
+                <p className="routine-summary">Primero validamos estructura y versión. Recién después te dejamos confirmar el reemplazo destructivo.</p>
+              </div>
+              <span className="status-pill status-pill--paused">Validación previa</span>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              accept="application/json,.json"
+              aria-label="Seleccionar archivo de backup"
+              className="backup-file-input"
+              type="file"
+              onChange={handleImportSelection}
+            />
+
+            <div className="backup-actions-row">
+              <Button fullWidth size="touch" variant="secondary" onClick={() => fileInputRef.current?.click()}>
+                Elegir archivo JSON
+              </Button>
+            </div>
+
+            {pendingBackup && pendingCounts ? (
+              <Card as="section" className="backup-preview-card" aria-labelledby="backup-preview-title" variant="highlight">
+                <div className="backup-card__header">
+                  <div>
+                    <p className="eyebrow">Archivo validado</p>
+                    <h3 className="section-title" id="backup-preview-title">
+                      Listo para restaurar
+                    </h3>
+                    <p className="empty-note backup-file-name">{pendingFileName ?? 'Backup local cargado'}</p>
+                  </div>
+                  <span className="status-pill status-pill--active">v{pendingBackup.version}</span>
                 </div>
-                <span className="status-pill status-pill--active">v{pendingBackup.version}</span>
-              </div>
 
-              <StatusBanner className="backup-warning" tone="warning">
-                OJO: si confirmás, GymTracker reemplaza tus datos locales actuales por este backup. No hay merge ni cloud salvadora.
-              </StatusBanner>
+                <StatusBanner className="backup-warning" tone="warning">
+                  OJO: si confirmás, GymTracker reemplaza tus datos locales actuales por este backup. No hay merge ni cloud salvadora.
+                </StatusBanner>
 
-              <p className="empty-note">Exportado: {formatBackupDate(pendingBackup.exportedAt)}</p>
-              <BackupCounts counts={pendingCounts} title="Contenido del backup importado" />
+                <p className="empty-note">Exportado: {formatBackupDate(pendingBackup.exportedAt)}</p>
+                <BackupCounts counts={pendingCounts} title="Contenido del backup importado" />
 
-              <div className="backup-actions-row backup-actions-row--stacked">
-                <Button disabled={isRestoring} fullWidth size="touch" variant="danger" onClick={handleRestore}>
-                  {isRestoring ? 'Restaurando backup...' : 'Sí, reemplazar mis datos locales'}
-                </Button>
-                <Button
-                  disabled={isRestoring}
-                  fullWidth
-                  size="touch"
-                  variant="ghost"
-                  onClick={() => {
-                    setPendingBackup(null)
-                    setPendingFileName(null)
-                  }}
-                >
-                  Cancelar restore
-                </Button>
-              </div>
-            </Card>
+                <div className="backup-actions-row backup-actions-row--stacked">
+                  <Button disabled={isRestoring} fullWidth size="touch" variant="danger" onClick={handleRestore}>
+                    {isRestoring ? 'Restaurando backup...' : 'Sí, reemplazar mis datos locales'}
+                  </Button>
+                  <Button
+                    disabled={isRestoring}
+                    fullWidth
+                    size="touch"
+                    variant="ghost"
+                    onClick={() => {
+                      setPendingBackup(null)
+                      setPendingFileName(null)
+                    }}
+                  >
+                    Cancelar restore
+                  </Button>
+                </div>
+              </Card>
+            ) : null}
+          </Card>
+
+          {!pendingBackup ? (
+            <EmptyState
+              description="Elegí un archivo JSON exportado por GymTracker y recién después vas a ver la previsualización con confirmación destructiva."
+              title="Todavía no cargaste un backup"
+            />
           ) : null}
-        </Card>
 
-        {!pendingBackup ? (
-          <EmptyState
-            description="Elegí un archivo JSON exportado por GymTracker y recién después vas a ver la previsualización con confirmación destructiva."
-            title="Todavía no cargaste un backup"
-          />
-        ) : null}
+          {errorMessage ? <StatusBanner tone="error">{errorMessage}</StatusBanner> : null}
 
-        {errorMessage ? <StatusBanner tone="error">{errorMessage}</StatusBanner> : null}
+          {successMessage ? <StatusBanner tone="success">{successMessage}</StatusBanner> : null}
+        </div>
+      </PageSection>
 
-        {successMessage ? <StatusBanner tone="success">{successMessage}</StatusBanner> : null}
-      </div>
-    </PageSection>
+      <PageSection title="Volver al panel" titleId="backup-back-title">
+        <Link className="module-link-card" to="/more">
+          <span className="eyebrow">Más</span>
+          <strong className="routine-card-title">Regresar al hub secundario</strong>
+          <span className="routine-summary">Desde ahí podés volver a métricas o seguir sumando módulos sin ensuciar la navegación principal.</span>
+          <span aria-hidden="true" className="module-link-card__arrow">
+            ↗
+          </span>
+        </Link>
+      </PageSection>
+    </>
   )
 }
 

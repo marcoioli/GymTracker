@@ -1,4 +1,5 @@
 import { type Dispatch, type FormEvent, type SetStateAction, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import { db } from '../../db/database'
@@ -8,6 +9,7 @@ import {
   createRoutineProgress,
   createRoutineWeek,
   getCurrentWeeklyMuscleVolume,
+  getSuggestedRoutineDay,
   MUSCLE_GROUPS,
   normalizeRoutineRecord,
   type Routine,
@@ -15,7 +17,7 @@ import {
   type RoutineExercise,
   type RoutineWeek
 } from '../../domain/routines'
-import { EmptyState, Field, FieldInput, FieldSelect, StatusBanner } from '../../shared/ui'
+import { Button, Card, EmptyState, Field, FieldInput, FieldSelect, PageSection, StatusBanner } from '../../shared/ui'
 import { activateRoutine, pauseRoutine, saveRoutine, validateRoutineDraft } from './routinesRepository'
 
 type RoutineFormState = {
@@ -27,6 +29,8 @@ type RoutineFormState = {
   weeks: RoutineWeek[]
 }
 
+type RoutineFilter = 'all' | 'active' | 'paused'
+
 const INITIAL_FORM_STATE = (): RoutineFormState => ({
   name: '',
   status: 'paused',
@@ -35,14 +39,20 @@ const INITIAL_FORM_STATE = (): RoutineFormState => ({
 })
 
 export function RoutinesPage() {
+  const navigate = useNavigate()
   const routines = useLiveQuery(() => db.routines.orderBy('updatedAt').reverse().toArray(), [], [])
   const exerciseCatalog = useLiveQuery(() => db.exerciseCatalog.orderBy('name').toArray(), [], [])
   const [formState, setFormState] = useState<RoutineFormState | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [isTogglingRoutine, setIsTogglingRoutine] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [filter, setFilter] = useState<RoutineFilter>('all')
 
   const routineCards = useMemo(() => (routines ?? []).map(normalizeRoutineRecord), [routines])
+  const filteredRoutines = useMemo(
+    () => routineCards.filter((routine) => (filter === 'all' ? true : routine.status === filter)),
+    [filter, routineCards]
+  )
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -87,111 +97,136 @@ export function RoutinesPage() {
 
   return (
     <>
-      <section className="panel" aria-labelledby="routines-title">
-        <div className="panel-header">
-          <div>
-            <h2 className="section-title" id="routines-title">
-              Rutinas
-            </h2>
-            <p className="empty-note panel-copy">
-              Armá bloques por semanas, definí días con nombre propio y dejá listos los ejercicios con series y RIR objetivo.
-            </p>
-          </div>
-          <button className="secondary-button" type="button" onClick={() => setFormState(INITIAL_FORM_STATE())}>
+      <PageSection
+        description="Escaneá tus rutinas, activá la que manda hoy y entrá rápido al entrenamiento sin pelearte con pantallas de configuración disfrazadas."
+        eyebrow="Rutinas"
+        title="Tus planes de entrenamiento"
+        titleId="routines-title"
+        actions={
+          <Button size="compact" variant="secondary" onClick={() => setFormState(INITIAL_FORM_STATE())}>
             Nueva rutina
-          </button>
+          </Button>
+        }
+      >
+        <div className="filter-chip-row" role="tablist" aria-label="Filtros de rutinas">
+          {[
+            { key: 'all', label: `Todas (${routineCards.length})` },
+            { key: 'active', label: `Activas (${routineCards.filter((routine) => routine.status === 'active').length})` },
+            { key: 'paused', label: `Pausadas (${routineCards.filter((routine) => routine.status === 'paused').length})` }
+          ].map((item) => (
+            <button
+              key={item.key}
+              aria-selected={filter === item.key}
+              className={`filter-chip${filter === item.key ? ' active' : ''}`}
+              role="tab"
+              type="button"
+              onClick={() => setFilter(item.key as RoutineFilter)}
+            >
+              {item.label}
+            </button>
+          ))}
         </div>
 
         {routineCards.length === 0 ? (
           <EmptyState
-            description="Creá la primera rutina, dejá sus días listos y recién ahí elegí cuál queda activa para entrenar sin fricción."
+            description="Creá la primera rutina, armá días realmente entrenables y recién ahí activá un plan para que Inicio y el CTA central tengan contexto real."
             title="Todavía no guardaste rutinas"
           />
         ) : (
-          <div className="routine-list">
-            {routineCards.map((routine) => {
+          <div className="routine-list routine-list--premium">
+            {filteredRoutines.map((routine) => {
               const totalDays = routine.weeks.reduce((count, week) => count + week.days.length, 0)
               const totalExercises = routine.weeks.reduce(
                 (count, week) => count + week.days.reduce((dayCount, day) => dayCount + day.exercises.length, 0),
                 0
               )
+              const totalSets = routine.weeks.reduce(
+                (count, week) => count + week.days.reduce((dayCount, day) => dayCount + day.exercises.reduce((sum, exercise) => sum + exercise.targetSets, 0), 0),
+                0
+              )
               const weeklyMuscleVolume = getCurrentWeeklyMuscleVolume(routine)
               const visibleWeeklyMuscleVolume = MUSCLE_GROUPS.filter((muscle) => weeklyMuscleVolume[muscle] > 0)
+              const suggestedDay = getSuggestedRoutineDay(routine)
 
               return (
-                <article className="routine-card" key={routine.id}>
+                <Card as="article" className="routine-card routine-card--premium" key={routine.id} variant={routine.status === 'active' ? 'highlight' : 'default'}>
                   <div className="routine-card-header">
                     <div>
                       <div className={`status-pill status-pill--${routine.status}`}>{getStatusLabel(routine.status)}</div>
                       <h3 className="routine-card-title">{routine.name}</h3>
+                      <p className="routine-summary">
+                        {totalDays} días · {totalExercises} ejercicios · {totalSets} series planificadas
+                      </p>
                     </div>
-                    <button className="ghost-button" type="button" onClick={() => setFormState(toFormState(routine))}>
+                    <Button size="compact" variant="ghost" onClick={() => setFormState(toFormState(routine))}>
                       Editar
-                    </button>
+                    </Button>
                   </div>
 
-                  <p className="routine-summary">
-                    {routine.weekCount} semanas · {totalDays} días · {totalExercises} ejercicios planificados
-                  </p>
-
-                  <section aria-label="Series semanales por grupo muscular" className="routine-meta-grid">
-                    <div className="meta-card">
-                      <strong>Series semanales por grupo muscular</strong>
-                      <span>
-                        Semana actual del plan. Esto muestra series planificadas, NO volumen en kg de sesiones reales.
-                      </span>
-                      {visibleWeeklyMuscleVolume.length === 0 ? (
-                        <span>Todavía no hay series planificadas en esta semana.</span>
-                      ) : (
-                        <ul>
-                          {visibleWeeklyMuscleVolume.map((muscle) => (
-                            <li key={muscle}>
-                              {muscle}: {weeklyMuscleVolume[muscle]} series
-                            </li>
-                          ))}
-                        </ul>
-                      )}
-                    </div>
-                  </section>
+                  <div className="stats-inline-grid stats-inline-grid--wide">
+                    <StatInline label="Semana actual" value={routine.weeks[routine.progress.currentWeekIndex]?.label ?? 'Sin semana'} />
+                    <StatInline label="Sugerido" value={suggestedDay ? suggestedDay.day.label : 'Sin día'} />
+                    <StatInline label="Último registro" value={formatLastCompleted(routine.progress.lastCompletedAt)} />
+                  </div>
 
                   <div className="routine-meta-grid">
-                    {routine.weeks.map((week) => (
-                      <div className="meta-card" key={week.id}>
-                        <strong>{week.label}</strong>
-                        <span>{week.days.map((day) => day.label).join(' · ')}</span>
+                    {visibleWeeklyMuscleVolume.length === 0 ? (
+                      <div className="meta-card">
+                        <strong>Semana actual</strong>
+                        <span>Todavía no hay series planificadas por grupo muscular.</span>
                       </div>
-                    ))}
+                    ) : (
+                      visibleWeeklyMuscleVolume.map((muscle) => (
+                        <div className="meta-card" key={muscle}>
+                          <strong>{muscle}</strong>
+                          <span>{weeklyMuscleVolume[muscle]} series</span>
+                        </div>
+                      ))
+                    )}
                   </div>
 
-                  <button
-                    className="cta-button"
-                    disabled={isTogglingRoutine === routine.id}
-                    type="button"
-                    onClick={() => handleToggleRoutine(routine)}
-                  >
-                    {routine.status === 'active' ? 'Pausar rutina' : 'Activar rutina'}
-                  </button>
-                </article>
+                  <div className="routine-card__actions">
+                    {routine.status === 'active' && suggestedDay ? (
+                      <Button
+                        fullWidth
+                        size="touch"
+                        onClick={() =>
+                          navigate(`/session/${routine.id}/${suggestedDay.weekIndex}/${suggestedDay.day.id}?startedAt=${encodeURIComponent(new Date().toISOString())}`)
+                        }
+                      >
+                        Entrenar hoy
+                      </Button>
+                    ) : null}
+
+                    <Button
+                      fullWidth
+                      size="touch"
+                      variant={routine.status === 'active' ? 'ghost' : 'secondary'}
+                      disabled={isTogglingRoutine === routine.id}
+                      onClick={() => handleToggleRoutine(routine)}
+                    >
+                      {routine.status === 'active' ? 'Pausar rutina' : 'Activar rutina'}
+                    </Button>
+                  </div>
+                </Card>
               )
             })}
           </div>
         )}
-      </section>
+      </PageSection>
 
       {formState ? (
-        <section className="panel" aria-labelledby="routine-form-title">
-          <div className="panel-header">
-            <div>
-              <h2 className="section-title" id="routine-form-title">
-                {formState.id ? 'Editar rutina' : 'Nueva rutina'}
-              </h2>
-              <p className="empty-note panel-copy">Mantené la estructura simple: semanas, días y ejercicios reutilizables.</p>
-            </div>
-            <button className="ghost-button" type="button" onClick={() => setFormState(null)}>
+        <PageSection
+          description="Mantené la estructura simple: semanas, días y ejercicios reutilizables. Diseño premium, sí; complejidad innecesaria, no."
+          eyebrow="Editor"
+          title={formState.id ? 'Editar rutina' : 'Nueva rutina'}
+          titleId="routine-form-title"
+          actions={
+            <Button size="compact" variant="ghost" onClick={() => setFormState(null)}>
               Cancelar
-            </button>
-          </div>
-
+            </Button>
+          }
+        >
           <form className="routine-form" onSubmit={handleSubmit}>
             <Field label="Nombre de la rutina">
               <FieldInput
@@ -251,9 +286,7 @@ export function RoutinesPage() {
                             updateFormState(setFormState, (current) => ({
                               ...current,
                               weeks: current.weeks.map((currentWeek) =>
-                                currentWeek.id === week.id
-                                  ? { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) }
-                                  : currentWeek
+                                currentWeek.id === week.id ? { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) } : currentWeek
                               )
                             }))
                           }
@@ -343,11 +376,7 @@ export function RoutinesPage() {
                                 />
                               </Field>
 
-                              <Field
-                                compact
-                                label="Grupo muscular"
-                                hint="Obligatorio para calcular el resumen semanal planificado."
-                              >
+                              <Field compact hint="Obligatorio para el resumen semanal." label="Grupo muscular">
                                 <FieldSelect
                                   required
                                   value={exercise.muscle}
@@ -408,9 +437,9 @@ export function RoutinesPage() {
 
             {errorMessage ? <StatusBanner tone="error">{errorMessage}</StatusBanner> : null}
 
-            <button className="cta-button" disabled={isSaving} type="submit">
+            <Button disabled={isSaving} fullWidth size="touch" type="submit">
               {isSaving ? 'Guardando...' : formState.id ? 'Guardar cambios' : 'Guardar rutina'}
-            </button>
+            </Button>
           </form>
 
           <datalist id="exercise-catalog-options">
@@ -418,10 +447,27 @@ export function RoutinesPage() {
               <option key={exercise.id} value={exercise.name} />
             ))}
           </datalist>
-        </section>
+        </PageSection>
       ) : null}
     </>
   )
+}
+
+function StatInline({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="stat-inline-card">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  )
+}
+
+function formatLastCompleted(value: string | null): string {
+  if (!value) {
+    return 'Sin registro'
+  }
+
+  return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(value))
 }
 
 function updateFormState(

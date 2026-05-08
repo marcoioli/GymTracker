@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 
+import { getSessionVolume } from '../../domain/analytics'
 import { db } from '../../db/database'
 import type { WorkoutSession } from '../../domain/sessions'
 import { Button, Card, EmptyState, Field, FieldSelect, PageSection } from '../../shared/ui'
@@ -10,29 +11,34 @@ type SessionFilterOption = {
   label: string
 }
 
+type RangeFilter = 'all' | 'week' | 'month'
+
 export function HistoryPage() {
   const routines = useLiveQuery(() => db.routines.toArray(), [], [])
   const sessions = useLiveQuery(() => db.sessions.orderBy('endedAt').reverse().toArray(), [], [])
   const [selectedRoutineId, setSelectedRoutineId] = useState('all')
   const [selectedDayKey, setSelectedDayKey] = useState('all')
   const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null)
+  const [rangeFilter, setRangeFilter] = useState<RangeFilter>('all')
+
+  const rangeFilteredSessions = useMemo(() => filterSessionsByRange(sessions, rangeFilter), [rangeFilter, sessions])
 
   const routineOptions = useMemo(() => {
     const labels = new Map<string, string>()
 
     routines.forEach((routine) => labels.set(routine.id, routine.name))
-    sessions.forEach((session) => labels.set(session.routineId, getSessionRoutineName(session, labels)))
+    rangeFilteredSessions.forEach((session) => labels.set(session.routineId, getSessionRoutineName(session, labels)))
 
     return Array.from(labels.entries())
       .sort((left, right) => left[1].localeCompare(right[1]))
       .map(([value, label]) => ({ value, label }))
-  }, [routines, sessions])
+  }, [rangeFilteredSessions, routines])
 
   const effectiveSelectedRoutineId = selectedRoutineId === 'all' || routineOptions.some((option) => option.value === selectedRoutineId) ? selectedRoutineId : 'all'
 
   const filteredByRoutine = useMemo(
-    () => (effectiveSelectedRoutineId === 'all' ? sessions : sessions.filter((session) => session.routineId === effectiveSelectedRoutineId)),
-    [effectiveSelectedRoutineId, sessions]
+    () => (effectiveSelectedRoutineId === 'all' ? rangeFilteredSessions : rangeFilteredSessions.filter((session) => session.routineId === effectiveSelectedRoutineId)),
+    [effectiveSelectedRoutineId, rangeFilteredSessions]
   )
 
   const dayOptions = useMemo<SessionFilterOption[]>(() => {
@@ -40,7 +46,6 @@ export function HistoryPage() {
 
     filteredByRoutine.forEach((session) => {
       const key = getSessionDayKey(session)
-
       unique.set(key, getSessionDayLabel(session))
     })
 
@@ -64,50 +69,81 @@ export function HistoryPage() {
 
   const selectedSession = filteredSessions.find((session) => session.id === effectiveSelectedSessionId) ?? null
   const routineLabels = useMemo(() => new Map(routineOptions.map((option) => [option.value, option.label])), [routineOptions])
+  const summary = useMemo(() => buildSummary(filteredSessions), [filteredSessions])
 
   return (
     <>
       <PageSection
-        description="Cada sesión queda congelada en este dispositivo. Si editás la rutina después, el historial NO se reescribe. Y eso está perfecto."
-        title="Historial"
+        description="Revisá sesiones guardadas como snapshots reales. Si la plantilla cambió después, el historial NO se reescribe, y así tiene que ser."
+        eyebrow="Historial"
+        title="Tus entrenamientos guardados"
         titleId="history-title"
       >
         {sessions.length === 0 ? (
           <EmptyState
             className="history-empty"
-            description="Entrená una vez y recién ahí vas a poder revisar el snapshot exacto de pesos, reps y volumen guardado localmente."
+            description="Entrená una vez y recién ahí vas a poder revisar pesos, reps, duración y volumen congelados en el momento real de la sesión."
             title="Todavía no guardaste sesiones"
           />
         ) : (
-          <div className="history-filter-grid">
-            <Field label="Rutina">
-              <FieldSelect value={effectiveSelectedRoutineId} onChange={(event) => setSelectedRoutineId(event.target.value)}>
-                <option value="all">Todas</option>
-                {routineOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </FieldSelect>
-            </Field>
+          <>
+            <div className="filter-chip-row" role="tablist" aria-label="Filtros rápidos de historial">
+              {[
+                { key: 'all', label: 'Todo' },
+                { key: 'week', label: 'Esta semana' },
+                { key: 'month', label: 'Este mes' }
+              ].map((item) => (
+                <button
+                  key={item.key}
+                  aria-selected={rangeFilter === item.key}
+                  className={`filter-chip${rangeFilter === item.key ? ' active' : ''}`}
+                  role="tab"
+                  type="button"
+                  onClick={() => setRangeFilter(item.key as RangeFilter)}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
 
-            <Field label="Día guardado">
-              <FieldSelect value={effectiveSelectedDayKey} onChange={(event) => setSelectedDayKey(event.target.value)}>
-                <option value="all">Todos</option>
-                {dayOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
-                ))}
-              </FieldSelect>
-            </Field>
-          </div>
+            <Card as="article" className="history-summary-card" variant="highlight">
+              <div className="stats-inline-grid stats-inline-grid--wide">
+                <StatInline label="Entrenamientos" value={`${summary.sessionCount}`} />
+                <StatInline label="Duración total" value={summary.totalDuration} />
+                <StatInline label="Volumen" value={summary.totalVolume} />
+              </div>
+            </Card>
+
+            <div className="history-filter-grid">
+              <Field label="Rutina">
+                <FieldSelect value={effectiveSelectedRoutineId} onChange={(event) => setSelectedRoutineId(event.target.value)}>
+                  <option value="all">Todas</option>
+                  {routineOptions.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </FieldSelect>
+              </Field>
+
+              <Field label="Día guardado">
+                <FieldSelect value={effectiveSelectedDayKey} onChange={(event) => setSelectedDayKey(event.target.value)}>
+                  <option value="all">Todos</option>
+                  {dayOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </FieldSelect>
+              </Field>
+            </div>
+          </>
         )}
       </PageSection>
 
       {filteredSessions.length > 0 ? (
         <PageSection
-          description="Elegí una sesión para revisar pesos, reps y volumen tal como quedaron grabados en ese momento."
+          description="Elegí una sesión para revisar el snapshot exacto que quedó guardado en ese momento."
           title={`Sesiones encontradas: ${filteredSessions.length}`}
           titleId="history-session-list-title"
         >
@@ -131,18 +167,33 @@ export function HistoryPage() {
                       </Button>
                     </div>
 
-                    <div className="history-session-meta">
+                    <div className="history-session-meta history-session-meta--compact">
                       <span>{formatSessionDate(session.endedAt)}</span>
                       <span>{session.exercises.length} ejercicios</span>
                       <span>{session.exercises.reduce((total, exercise) => total + exercise.sets.length, 0)} series</span>
+                    </div>
+
+                    <div className="history-preview-tags" aria-label="Ejercicios principales de la sesión">
+                      {session.exercises.slice(0, 3).map((exercise) => (
+                        <span className="history-preview-tag" key={`${session.id}:${exercise.id}`}>
+                          {exercise.exerciseName}
+                        </span>
+                      ))}
                     </div>
                   </Card>
                 )
               })}
             </div>
 
-            {selectedSession ? <SessionDetail session={selectedSession} routineLabels={routineLabels} /> : null}
+            {selectedSession ? <SessionDetail routineLabels={routineLabels} session={selectedSession} /> : null}
           </div>
+        </PageSection>
+      ) : sessions.length > 0 ? (
+        <PageSection title="Sin resultados" titleId="history-empty-filter-title">
+          <EmptyState
+            description="No encontramos sesiones con esa combinación de rango y filtros. Ajustá el criterio y listo."
+            title="Ese filtro dejó el historial vacío"
+          />
         </PageSection>
       ) : null}
     </>
@@ -164,7 +215,9 @@ function SessionDetail({
           <h3 className="section-title" id="history-detail-title">
             {getSessionRoutineName(session, routineLabels)}
           </h3>
-          <p className="empty-note">{getSessionDayLabel(session)} · {formatSessionDate(session.endedAt)}</p>
+          <p className="empty-note">
+            {getSessionDayLabel(session)} · {formatSessionDate(session.endedAt)}
+          </p>
         </div>
         <div className={`status-pill status-pill--${session.status === 'completed' ? 'active' : 'paused'}`}>
           {session.status === 'completed' ? 'Completada' : 'Terminada antes'}
@@ -203,6 +256,15 @@ function SessionDetail({
   )
 }
 
+function StatInline({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="stat-inline-card">
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </div>
+  )
+}
+
 function getSessionRoutineName(session: WorkoutSession, routineLabels: Map<string, string>): string {
   return session.routineName ?? routineLabels.get(session.routineId) ?? 'Rutina archivada'
 }
@@ -228,4 +290,41 @@ function formatVolume(sets: WorkoutSession['exercises'][number]['sets']): string
   const totalVolume = sets.reduce((total, set) => total + (set.reps !== null && set.weightKg !== null ? set.reps * set.weightKg : 0), 0)
 
   return `${totalVolume.toFixed(0)} kg volumen`
+}
+
+function filterSessionsByRange(sessions: WorkoutSession[], range: RangeFilter): WorkoutSession[] {
+  const now = new Date()
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const monday = getWeekMonday(now).toISOString().slice(0, 10)
+
+  if (range === 'week') {
+    return sessions.filter((session) => session.endedAt.slice(0, 10) >= monday)
+  }
+
+  if (range === 'month') {
+    return sessions.filter((session) => session.endedAt.slice(0, 7) === thisMonth)
+  }
+
+  return sessions
+}
+
+function buildSummary(sessions: WorkoutSession[]) {
+  const totalMinutes = sessions.reduce((total, session) => total + Math.round((new Date(session.endedAt).getTime() - new Date(session.startedAt).getTime()) / 60000), 0)
+  const hours = Math.floor(Math.max(totalMinutes, 0) / 60)
+  const minutes = Math.max(totalMinutes, 0) % 60
+  const totalVolume = sessions.reduce((total, session) => total + getSessionVolume(session), 0)
+
+  return {
+    sessionCount: sessions.length,
+    totalDuration: `${hours}h ${String(minutes).padStart(2, '0')}m`,
+    totalVolume: `${Math.round(totalVolume).toLocaleString('es-AR')} kg`
+  }
+}
+
+function getWeekMonday(anchor: Date): Date {
+  const current = new Date(Date.UTC(anchor.getFullYear(), anchor.getMonth(), anchor.getDate()))
+  const day = current.getUTCDay()
+  const diff = day === 0 ? -6 : 1 - day
+  current.setUTCDate(current.getUTCDate() + diff)
+  return current
 }
