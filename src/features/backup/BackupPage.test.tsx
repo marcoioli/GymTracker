@@ -1,5 +1,6 @@
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { MemoryRouter } from 'react-router-dom'
 
 import { db } from '../../db/database'
 import { BackupPage } from './BackupPage'
@@ -8,7 +9,11 @@ describe('BackupPage', () => {
   it('shows a clear validation error when the selected file is incompatible', async () => {
     const user = userEvent.setup()
 
-    render(<BackupPage />)
+    render(
+      <MemoryRouter>
+        <BackupPage />
+      </MemoryRouter>
+    )
 
     const input = screen.getByLabelText(/seleccionar archivo de backup/i)
     const invalidFile = new File([JSON.stringify({ nope: true })], 'broken.json', { type: 'application/json' })
@@ -33,7 +38,11 @@ describe('BackupPage', () => {
       updatedAt: '2026-05-05T10:00:00.000Z'
     })
 
-    render(<BackupPage />)
+    render(
+      <MemoryRouter>
+        <BackupPage />
+      </MemoryRouter>
+    )
 
     const validFile = new File(
       [

@@ -55,9 +55,9 @@ describe('DashboardPage', () => {
       </MemoryRouter>
     )
 
-    expect(await screen.findByText(/próximo sugerido: semana 1 · pull/i)).toBeInTheDocument()
+    expect(await screen.findByText(/upper lower · semana 1 · pull/i)).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /iniciar entrenamiento/i }))
+    await user.click(screen.getByRole('button', { name: /iniciar rutina/i }))
 
     expect(screen.getByRole('dialog', { name: /confirmá el día/i })).toBeInTheDocument()
     expect(screen.getByRole('dialog', { name: /confirmá el día/i })).toHaveTextContent(/sugerido/i)

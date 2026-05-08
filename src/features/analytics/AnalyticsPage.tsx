@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
 import {
@@ -61,70 +62,84 @@ export function AnalyticsPage() {
   return (
     <>
       <PageSection
-        description="Todo sale de sesiones locales guardadas en este dispositivo. Sin backend, sin magia, sin humo. Historia real y listo."
-        title="Métricas"
+        description="Progreso real derivado de sesiones guardadas en este dispositivo. Sin backend, sin inventos, sin métricas cosméticas."
+        eyebrow="Métricas"
+        title="Tendencias y rendimiento"
         titleId="analytics-title"
+        actions={
+          <Link className="ghost-button" to="/more">
+            Volver
+          </Link>
+        }
       >
         {sessions.length === 0 ? (
           <EmptyState
             className="history-empty"
-            description="Entrená al menos una vez en este dispositivo y recién ahí tiene sentido calcular frecuencia, volumen o progreso."
+            description="Entrená al menos una vez y recién ahí tiene sentido hablar de frecuencia, volumen o progreso. Primero datos, después diseño."
             title="Todavía no hay historial suficiente"
           />
         ) : (
-          <div className="history-filter-grid">
-            <Field label="Rutina">
-              <FieldSelect value={effectiveSelectedRoutineId} onChange={(event) => setSelectedRoutineId(event.target.value)}>
-                <option value="all">Todas</option>
-                {routines.map((routine) => (
-                  <option key={routine.id} value={routine.id}>
-                    {routine.name}
-                  </option>
-                ))}
-              </FieldSelect>
-            </Field>
+          <>
+            <div className="history-filter-grid">
+              <Field label="Rutina">
+                <FieldSelect value={effectiveSelectedRoutineId} onChange={(event) => setSelectedRoutineId(event.target.value)}>
+                  <option value="all">Todas</option>
+                  {routines.map((routine) => (
+                    <option key={routine.id} value={routine.id}>
+                      {routine.name}
+                    </option>
+                  ))}
+                </FieldSelect>
+              </Field>
 
-            <Field label="Ejercicio">
-              <FieldSelect disabled={exerciseOptions.length === 0} value={effectiveSelectedExerciseKey} onChange={(event) => setSelectedExerciseKey(event.target.value)}>
-                {exerciseOptions.length === 0 ? <option value="">Sin datos</option> : null}
-                {exerciseOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
-                ))}
-              </FieldSelect>
-            </Field>
-          </div>
+              <Field label="Ejercicio">
+                <FieldSelect disabled={exerciseOptions.length === 0} value={effectiveSelectedExerciseKey} onChange={(event) => setSelectedExerciseKey(event.target.value)}>
+                  {exerciseOptions.length === 0 ? <option value="">Sin datos</option> : null}
+                  {exerciseOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </FieldSelect>
+              </Field>
+            </div>
+
+            <div className="kpi-grid analytics-kpi-grid">
+              <AnalyticsKpi label="Frecuencia esta semana" value={`${frequency.sessionCount}`} caption={formatWeekLabel(frequency.weekStart)} />
+              <AnalyticsKpi
+                label="Volumen semanal"
+                value={formatCompactVolume(weeklyVolume.at(-1)?.totalVolume ?? 0)}
+                caption={weeklyVolume.at(-1) ? formatWeekLabel(weeklyVolume.at(-1)!.weekStart) : 'Sin datos'}
+              />
+              <AnalyticsKpi
+                label="Rutinas con adherencia"
+                value={`${adherence.filter((entry) => entry.summary.plannedDays > 0).length}`}
+                caption="Calculadas sobre la semana actual"
+              />
+              <AnalyticsKpi label="Sesiones visibles" value={`${filteredSessions.length}`} caption="Base usada en el análisis" />
+            </div>
+          </>
         )}
       </PageSection>
 
       {sessions.length > 0 ? (
         <PageSection
-          description="Tres indicadores mínimos para no perder el norte: cuántas veces entrenaste, cuánto volumen moviste y qué tan alineado venís con el plan."
+          description="Tres señales para no perder el norte: frecuencia, volumen y adherencia sobre la rutina actual."
           title="Resumen global"
           titleId="analytics-summary-title"
         >
-          <div className="kpi-grid analytics-kpi-grid">
-            <AnalyticsKpi label="Frecuencia esta semana" value={`${frequency.sessionCount}`} caption={formatWeekLabel(frequency.weekStart)} />
-            <AnalyticsKpi
-              label="Volumen semanal"
-              value={formatCompactVolume(weeklyVolume.at(-1)?.totalVolume ?? 0)}
-              caption={weeklyVolume.at(-1) ? formatWeekLabel(weeklyVolume.at(-1)!.weekStart) : 'Sin datos'}
-            />
-            <AnalyticsKpi
-              label="Rutinas con adherencia"
-              value={`${adherence.filter((entry) => entry.summary.plannedDays > 0).length}`}
-              caption="Calculadas sobre la semana actual"
-            />
-            <AnalyticsKpi label="Sesiones locales" value={`${filteredSessions.length}`} caption="Base para progreso y volumen" />
-          </div>
-
           <div className="analytics-subsection">
             <h3 className="section-title analytics-subsection__title">Volumen por semana</h3>
-            <div className="analytics-trend-grid">
+            <div className="analytics-trend-grid analytics-trend-grid--bars">
               {weeklyVolume.map((week) => (
-                <Card className="analytics-trend-card" key={week.weekStart}>
+                <Card className="analytics-trend-card analytics-trend-card--bar" key={week.weekStart}>
                   <strong>{formatWeekLabel(week.weekStart)}</strong>
+                  <div className="mini-bar-track">
+                    <span
+                      className="mini-bar-track__fill"
+                      style={{ width: `${Math.max(12, Math.round((week.totalVolume / Math.max(...weeklyVolume.map((entry) => entry.totalVolume), 1)) * 100))}%` }}
+                    />
+                  </div>
                   <span className="kpi-value analytics-trend-card__value">{formatCompactVolume(week.totalVolume)}</span>
                 </Card>
               ))}
@@ -150,7 +165,7 @@ export function AnalyticsPage() {
 
       {progressPoints.length > 0 ? (
         <PageSection
-          description="La progresión se calcula con sesiones reales guardadas. Peso, reps y volumen sin depender de la plantilla actual."
+          description="La progresión usa sesiones reales guardadas. Peso, reps y volumen sin depender de la plantilla actual."
           title={`Progreso: ${exerciseOptions.find((option) => option.key === effectiveSelectedExerciseKey)?.label ?? 'Ejercicio'}`}
           titleId="analytics-progress-title"
         >
@@ -160,14 +175,32 @@ export function AnalyticsPage() {
             ))}
           </div>
         </PageSection>
+      ) : sessions.length > 0 ? (
+        <PageSection title="Sin progresión todavía" titleId="analytics-empty-progress-title">
+          <EmptyState
+            description="No hay suficientes repeticiones del ejercicio filtrado para mostrar una línea de progreso útil."
+            title="Todavía no hay puntos comparables"
+          />
+        </PageSection>
       ) : null}
+
+      <PageSection title="Volver al control" titleId="analytics-back-title">
+        <Link className="module-link-card" to="/more">
+          <span className="eyebrow">Más</span>
+          <strong className="routine-card-title">Ir al panel secundario</strong>
+          <span className="routine-summary">Desde ahí podés saltar entre métricas, respaldo y próximas extensiones.</span>
+          <span aria-hidden="true" className="module-link-card__arrow">
+            ↗
+          </span>
+        </Link>
+      </PageSection>
     </>
   )
 }
 
 function AnalyticsKpi({ caption, label, value }: { caption: string; label: string; value: string }) {
   return (
-    <Card as="article" className="kpi-card">
+    <Card as="article" className="kpi-card dashboard-kpi-card">
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">{value}</div>
       <div className="analytics-kpi-card__caption">{caption}</div>
