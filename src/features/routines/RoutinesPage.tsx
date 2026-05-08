@@ -5,6 +5,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from '../../db/database'
 import {
   DEFAULT_MUSCLE_GROUP,
+  createExerciseSetReference,
   createRoutineDay,
   createRoutineProgress,
   createRoutineWeek,
@@ -15,6 +16,7 @@ import {
   type Routine,
   type RoutineDay,
   type RoutineExercise,
+  type RoutineExerciseSetReference,
   type RoutineWeek
 } from '../../domain/routines'
 import { Button, Card, EmptyState, Field, FieldInput, FieldSelect, PageSection, StatusBanner } from '../../shared/ui'
@@ -43,6 +45,7 @@ export function RoutinesPage() {
   const routines = useLiveQuery(() => db.routines.orderBy('updatedAt').reverse().toArray(), [], [])
   const exerciseCatalog = useLiveQuery(() => db.exerciseCatalog.orderBy('name').toArray(), [], [])
   const [formState, setFormState] = useState<RoutineFormState | null>(null)
+  const [weekCountInput, setWeekCountInput] = useState('')
   const [isSaving, setIsSaving] = useState(false)
   const [isTogglingRoutine, setIsTogglingRoutine] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -53,6 +56,22 @@ export function RoutinesPage() {
     () => routineCards.filter((routine) => (filter === 'all' ? true : routine.status === filter)),
     [filter, routineCards]
   )
+
+  function openCreateRoutineForm() {
+    setFormState(INITIAL_FORM_STATE())
+    setWeekCountInput('')
+  }
+
+  function openEditRoutineForm(routine: Routine) {
+    const nextFormState = toFormState(routine)
+    setFormState(nextFormState)
+    setWeekCountInput(String(nextFormState.weeks.length))
+  }
+
+  function closeRoutineForm() {
+    setFormState(null)
+    setWeekCountInput('')
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -73,7 +92,7 @@ export function RoutinesPage() {
 
     try {
       await saveRoutine(formState)
-      setFormState(null)
+      closeRoutineForm()
     } catch {
       setErrorMessage('No pudimos guardar la rutina. Probá de nuevo.')
     } finally {
@@ -98,12 +117,12 @@ export function RoutinesPage() {
   return (
     <>
       <PageSection
-        description="Escaneá tus rutinas, activá la que manda hoy y entrá rápido al entrenamiento sin pelearte con pantallas de configuración disfrazadas."
-        eyebrow="Rutinas"
-        title="Tus planes de entrenamiento"
+        description="Tus plantillas activas, pausadas y listas para entrenar."
+        eyebrow="Routines"
+        title="Routines"
         titleId="routines-title"
         actions={
-          <Button size="compact" variant="secondary" onClick={() => setFormState(INITIAL_FORM_STATE())}>
+          <Button size="compact" variant="secondary" onClick={openCreateRoutineForm}>
             Nueva rutina
           </Button>
         }
@@ -158,7 +177,7 @@ export function RoutinesPage() {
                         {totalDays} días · {totalExercises} ejercicios · {totalSets} series planificadas
                       </p>
                     </div>
-                    <Button size="compact" variant="ghost" onClick={() => setFormState(toFormState(routine))}>
+                    <Button size="compact" variant="ghost" onClick={() => openEditRoutineForm(routine)}>
                       Editar
                     </Button>
                   </div>
@@ -217,12 +236,12 @@ export function RoutinesPage() {
 
       {formState ? (
         <PageSection
-          description="Mantené la estructura simple: semanas, días y ejercicios reutilizables. Diseño premium, sí; complejidad innecesaria, no."
+          description="Editá semanas, días y ejercicios sin romper la estructura de la rutina."
           eyebrow="Editor"
           title={formState.id ? 'Editar rutina' : 'Nueva rutina'}
           titleId="routine-form-title"
           actions={
-            <Button size="compact" variant="ghost" onClick={() => setFormState(null)}>
+            <Button size="compact" variant="ghost" onClick={closeRoutineForm}>
               Cancelar
             </Button>
           }
@@ -243,9 +262,16 @@ export function RoutinesPage() {
                 min={1}
                 name="week-count"
                 type="number"
-                value={formState.weeks.length}
+                value={weekCountInput}
                 onChange={(event) => {
-                  const weekCount = Number(event.target.value)
+                  const nextValue = event.target.value
+                  setWeekCountInput(nextValue)
+
+                  if (nextValue.trim() === '') {
+                    return
+                  }
+
+                  const weekCount = Number(nextValue)
 
                   if (Number.isInteger(weekCount) && weekCount >= 1) {
                     updateFormState(setFormState, (current) => ({ ...current, weeks: resizeWeeks(current.weeks, weekCount) }))
@@ -321,95 +347,143 @@ export function RoutinesPage() {
                           ) : null}
 
                           {day.exercises.map((exercise, exerciseIndex) => (
-                            <div className="exercise-row" key={exercise.id}>
-                              <Field className="exercise-row__name" label="Ejercicio">
-                                <FieldInput
-                                  list="exercise-catalog-options"
-                                  placeholder="Ej: Sentadilla frontal"
-                                  type="text"
-                                  value={exercise.name}
-                                  onChange={(event) => {
-                                    updateFormState(setFormState, (current) => ({
-                                      ...current,
-                                      weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, {
-                                        name: event.target.value
-                                      })
-                                    }))
-                                  }}
-                                />
-                              </Field>
-
-                              <Field compact label="Series">
-                                <FieldInput
-                                  min={1}
-                                  type="number"
-                                  value={exercise.targetSets}
-                                  onChange={(event) => {
-                                    const targetSets = Number(event.target.value)
-
-                                    if (Number.isInteger(targetSets) && targetSets >= 1) {
+                            <div className="routine-exercise-planner" key={exercise.id}>
+                              <div className="routine-exercise-planner__top">
+                                <Field className="exercise-row__name" label="Ejercicio">
+                                  <FieldInput
+                                    list="exercise-catalog-options"
+                                    placeholder="Ej: Sentadilla frontal"
+                                    type="text"
+                                    value={exercise.name}
+                                    onChange={(event) => {
                                       updateFormState(setFormState, (current) => ({
                                         ...current,
-                                        weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, { targetSets })
+                                        weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, {
+                                          name: event.target.value
+                                        })
                                       }))
-                                    }
-                                  }}
-                                />
-                              </Field>
+                                    }}
+                                  />
+                                </Field>
 
-                              <Field compact label="RIR objetivo">
-                                <FieldInput
-                                  min={0}
-                                  placeholder="Opcional"
-                                  type="number"
-                                  value={exercise.targetRir ?? ''}
-                                  onChange={(event) => {
-                                    const nextValue = event.target.value
+                                <Field compact hint="Obligatorio para el resumen semanal." label="Grupo muscular">
+                                  <FieldSelect
+                                    required
+                                    value={exercise.muscle}
+                                    onChange={(event) => {
+                                      updateFormState(setFormState, (current) => ({
+                                        ...current,
+                                        weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, {
+                                          muscle: event.target.value as RoutineExercise['muscle']
+                                        })
+                                      }))
+                                    }}
+                                  >
+                                    {MUSCLE_GROUPS.map((muscle) => (
+                                      <option key={muscle} value={muscle}>
+                                        {muscle}
+                                      </option>
+                                    ))}
+                                  </FieldSelect>
+                                </Field>
+                              </div>
 
+                              <div className="routine-exercise-planner__summary">
+                                <strong>{exercise.name.trim() || `Ejercicio ${exerciseIndex + 1}`}</strong>
+                                <span>Referencia por serie para planificar la rutina. No afecta el tracking real.</span>
+                              </div>
+
+                              <div className="routine-series-planner" aria-label={`Planificación de series para ${exercise.name || `ejercicio ${exerciseIndex + 1}`}`}>
+                                <div className="routine-series-planner__head" aria-hidden="true">
+                                  <span>Set</span>
+                                  <span>Repeticiones</span>
+                                  <span>RIR</span>
+                                  <span />
+                                </div>
+
+                                {(exercise.setReferences ?? []).map((setReference, setIndex) => (
+                                  <div className="routine-series-planner__row" key={setReference.id}>
+                                    <span className="routine-series-planner__index">{setIndex + 1}</span>
+
+                                    <input
+                                      aria-label={`Repeticiones objetivo serie ${setIndex + 1}`}
+                                      className="track-set-input track-set-input--routine"
+                                      placeholder="8-12"
+                                      type="text"
+                                      value={setReference.repsTarget}
+                                      onChange={(event) => {
+                                        updateFormState(setFormState, (current) => ({
+                                          ...current,
+                                          weeks: updateExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id, {
+                                            repsTarget: event.target.value
+                                          })
+                                        }))
+                                      }}
+                                    />
+
+                                    <input
+                                      aria-label={`RIR objetivo serie ${setIndex + 1}`}
+                                      className="track-set-input track-set-input--routine"
+                                      inputMode="text"
+                                      placeholder="1-2"
+                                      type="text"
+                                      value={setReference.rirTarget}
+                                      onChange={(event) => {
+                                        updateFormState(setFormState, (current) => ({
+                                          ...current,
+                                          weeks: updateExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id, {
+                                            rirTarget: event.target.value
+                                          })
+                                        }))
+                                      }}
+                                    />
+
+                                    <button
+                                      aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
+                                      className="routine-series-planner__remove"
+                                      disabled={exercise.targetSets <= 1}
+                                      type="button"
+                                      onClick={() => {
+                                        updateFormState(setFormState, (current) => ({
+                                          ...current,
+                                          weeks: removeExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id)
+                                        }))
+                                      }}
+                                    >
+                                      −
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+
+                              <div className="routine-exercise-planner__actions">
+                                <button
+                                  className="routine-exercise-planner__add-set"
+                                  type="button"
+                                  onClick={() => {
                                     updateFormState(setFormState, (current) => ({
                                       ...current,
-                                      weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, {
-                                        targetRir: nextValue === '' ? null : Math.max(0, Number(nextValue))
-                                      })
-                                    }))
-                                  }}
-                                />
-                              </Field>
-
-                              <Field compact hint="Obligatorio para el resumen semanal." label="Grupo muscular">
-                                <FieldSelect
-                                  required
-                                  value={exercise.muscle}
-                                  onChange={(event) => {
-                                    updateFormState(setFormState, (current) => ({
-                                      ...current,
-                                      weeks: updateExercise(current.weeks, week.id, day.id, exercise.id, {
-                                        muscle: event.target.value as RoutineExercise['muscle']
-                                      })
+                                      weeks: addExerciseSetReference(current.weeks, week.id, day.id, exercise.id)
                                     }))
                                   }}
                                 >
-                                  {MUSCLE_GROUPS.map((muscle) => (
-                                    <option key={muscle} value={muscle}>
-                                      {muscle}
-                                    </option>
-                                  ))}
-                                </FieldSelect>
-                              </Field>
+                                  Agregar serie
+                                </button>
 
-                              <button
-                                aria-label={`Eliminar ejercicio ${exerciseIndex + 1}`}
-                                className="ghost-button ghost-button--danger"
-                                type="button"
-                                onClick={() => {
-                                  updateFormState(setFormState, (current) => ({
-                                    ...current,
-                                    weeks: removeExercise(current.weeks, week.id, day.id, exercise.id)
-                                  }))
-                                }}
-                              >
-                                Quitar
-                              </button>
+                                <button
+                                  aria-label={`Eliminar ejercicio ${exerciseIndex + 1}`}
+                                  className="routine-exercise-planner__remove-exercise"
+                                  type="button"
+                                  onClick={() => {
+                                    updateFormState(setFormState, (current) => ({
+                                      ...current,
+                                      weeks: removeExercise(current.weeks, week.id, day.id, exercise.id)
+                                    }))
+                                  }}
+                                >
+                                  Quitar ejercicio
+                                </button>
+                              </div>
                             </div>
                           ))}
                         </div>
@@ -530,6 +604,82 @@ function updateExercise(
   )
 }
 
+function updateExerciseSetReference(
+  weeks: RoutineWeek[],
+  weekId: string,
+  dayId: string,
+  exerciseId: string,
+  setReferenceId: string,
+  patch: Partial<RoutineExerciseSetReference>
+): RoutineWeek[] {
+  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) =>
+    references.map((reference) => (reference.id === setReferenceId ? { ...reference, ...patch } : reference))
+  )
+}
+
+function addExerciseSetReference(weeks: RoutineWeek[], weekId: string, dayId: string, exerciseId: string): RoutineWeek[] {
+  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => [
+    ...references,
+    createExerciseSetReference({ rirTarget: references.at(-1)?.rirTarget ?? '' })
+  ])
+}
+
+function removeExerciseSetReference(
+  weeks: RoutineWeek[],
+  weekId: string,
+  dayId: string,
+  exerciseId: string,
+  setReferenceId: string
+): RoutineWeek[] {
+  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => {
+    if (references.length <= 1) {
+      return references
+    }
+
+    const nextReferences = references.filter((reference) => reference.id !== setReferenceId)
+    return nextReferences.length > 0 ? nextReferences : references
+  })
+}
+
+function updateExerciseReferenceCollection(
+  weeks: RoutineWeek[],
+  weekId: string,
+  dayId: string,
+  exerciseId: string,
+  updater: (references: RoutineExerciseSetReference[]) => RoutineExerciseSetReference[]
+): RoutineWeek[] {
+  return weeks.map((week) =>
+    week.id !== weekId
+      ? week
+      : {
+          ...week,
+          days: week.days.map((day) =>
+            day.id !== dayId
+              ? day
+              : {
+                  ...day,
+                  exercises: day.exercises.map((exercise) => {
+                    if (exercise.id !== exerciseId) {
+                      return exercise
+                    }
+
+                    const baseReferences = exercise.setReferences?.length ? exercise.setReferences : Array.from({ length: Math.max(exercise.targetSets, 1) }, () => createExerciseSetReference())
+                    const nextReferences = updater(baseReferences)
+                    const normalizedReferences = nextReferences.length > 0 ? nextReferences : [createExerciseSetReference()]
+
+                    return {
+                      ...exercise,
+                      setReferences: normalizedReferences,
+                      targetSets: normalizedReferences.length,
+                      targetRir: deriveRoutineExerciseTargetRir(normalizedReferences)
+                    }
+                  })
+                }
+          )
+        }
+  )
+}
+
 function removeExercise(weeks: RoutineWeek[], weekId: string, dayId: string, exerciseId: string): RoutineWeek[] {
   return weeks.map((week) =>
     week.id !== weekId
@@ -549,8 +699,21 @@ function createExercise(): RoutineExercise {
     name: '',
     targetSets: 3,
     targetRir: null,
-    muscle: DEFAULT_MUSCLE_GROUP
+    muscle: DEFAULT_MUSCLE_GROUP,
+    setReferences: [createExerciseSetReference(), createExerciseSetReference(), createExerciseSetReference()]
   }
+}
+
+function deriveRoutineExerciseTargetRir(setReferences: RoutineExerciseSetReference[]): number | null {
+  for (const reference of setReferences) {
+    const normalized = reference.rirTarget.trim()
+
+    if (/^\d+$/.test(normalized)) {
+      return Number(normalized)
+    }
+  }
+
+  return null
 }
 
 function getStatusLabel(status: Routine['status']): string {

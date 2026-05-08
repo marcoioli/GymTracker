@@ -31,8 +31,9 @@ describe('RoutinesPage', () => {
     await user.click(addExerciseButtons[0])
 
     await user.type(screen.getByLabelText(/^ejercicio$/i), 'Press banca')
-    fireEvent.change(screen.getByLabelText(/series/i), { target: { value: '4' } })
-    fireEvent.change(screen.getByLabelText(/rir objetivo/i), { target: { value: '2' } })
+    await user.click(screen.getByRole('button', { name: /agregar serie/i }))
+    fireEvent.change(screen.getAllByLabelText(/repeticiones objetivo serie/i)[0], { target: { value: '8-12' } })
+    fireEvent.change(screen.getAllByLabelText(/rir objetivo serie/i)[0], { target: { value: '2' } })
     fireEvent.change(screen.getByLabelText(/grupo muscular/i), { target: { value: 'Pecho' } })
 
     await user.click(screen.getByRole('button', { name: /guardar rutina/i }))
@@ -49,6 +50,8 @@ describe('RoutinesPage', () => {
     expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe('Pecho y espalda')
     expect(savedRoutine?.weeks[1]?.days).toHaveLength(2)
     expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.muscle).toBe('Pecho')
+    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences).toHaveLength(4)
+    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.repsTarget).toBe('8-12')
     expect(catalogEntry?.name).toBe('Press banca')
 
     await db.sessions.add({
