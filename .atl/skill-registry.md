@@ -8,106 +8,103 @@ See `_shared/skill-resolver.md` for the full resolution protocol.
 
 | Trigger | Skill | Path |
 |---------|-------|------|
-| When asked to improve accessibility, run an a11y audit, ensure WCAG compliance, add screen reader support, keyboard navigation, or make a UI accessible | accessibility | C:\Users\marko\.agents\skills\accessibility\SKILL.md |
-| When creating a pull request, opening a PR, or preparing changes for review | branch-pr | C:\Users\marko\.config\opencode\skills\branch-pr\SKILL.md |
-| When the user asks how to do something via an installable skill, wants to find a skill, or extend agent capabilities | find-skills | C:\Users\marko\.agents\skills\find-skills\SKILL.md |
-| When building or styling web components, pages, apps, dashboards, posters, or other frontend UI with strong visual quality | frontend-design | C:\Users\marko\.agents\skills\frontend-design\SKILL.md |
-| When the task needs a visually strong landing page, site, app, prototype, demo, or game UI with restrained composition | frontend-skill | C:\Users\marko\.agents\skills\frontend-skill\SKILL.md |
-| When writing Go tests, using teatest, or adding test coverage | go-testing | C:\Users\marko\.config\opencode\skills\go-testing\SKILL.md |
-| When creating a GitHub issue, reporting a bug, or requesting a feature | issue-creation | C:\Users\marko\.config\opencode\skills\issue-creation\SKILL.md |
-| When the user asks for judgment day / dual adversarial review | judgment-day | C:\Users\marko\.config\opencode\skills\judgment-day\SKILL.md |
-| When asked to improve SEO, optimize for search, fix meta tags, add structured data, or improve sitemap/search visibility | seo | C:\Users\marko\.agents\skills\seo\SKILL.md |
-| When creating a new AI skill, adding agent instructions, or documenting reusable AI patterns | skill-creator | C:\Users\marko\.config\opencode\skills\skill-creator\SKILL.md |
-| When doing UI/UX design work that benefits from the local searchable design-system database | ui-ux-pro-max | C:\GymTracker\.opencode\skills\ui-ux-pro-max\SKILL.md |
+| When creating a pull request, opening a PR, or preparing changes for review. | branch-pr | C:\Users\marko\.config\opencode\skills\branch-pr\SKILL.md |
+| When writing Go tests, using teatest, or adding test coverage. | go-testing | C:\Users\marko\.config\opencode\skills\go-testing\SKILL.md |
+| When creating a GitHub issue, reporting a bug, or requesting a feature. | issue-creation | C:\Users\marko\.config\opencode\skills\issue-creation\SKILL.md |
+| When user says "judgment day", "judgment-day", "review adversarial", "dual review", "doble review", "juzgar", "que lo juzguen". | judgment-day | C:\Users\marko\.config\opencode\skills\judgment-day\SKILL.md |
+| When user asks to create a new skill, add agent instructions, or document patterns for AI. | skill-creator | C:\Users\marko\.config\opencode\skills\skill-creator\SKILL.md |
+| Use when asked to "improve accessibility", "a11y audit", "WCAG compliance", "screen reader support", "keyboard navigation", or "make accessible". | accessibility | C:\Users\marko\.agents\skills\accessibility\SKILL.md |
+| Use this skill when the user asks to build web components, pages, artifacts, posters, or applications (examples include websites, landing pages, dashboards, React components, HTML/CSS layouts, or when styling/beautifying any web UI). | frontend-design | C:\Users\marko\.agents\skills\frontend-design\SKILL.md |
+| Use when the task asks for a visually strong landing page, website, app, prototype, demo, or game UI. | frontend-skill | C:\Users\marko\.agents\skills\frontend-skill\SKILL.md |
+| Use when asked to "improve SEO", "optimize for search", "fix meta tags", "add structured data", "sitemap optimization", or "search engine optimization". | seo | C:\Users\marko\.agents\skills\seo\SKILL.md |
+| This skill should be used when the user is looking for functionality that might exist as an installable skill. | find-skills | C:\Users\marko\.agents\skills\find-skills\SKILL.md |
+| UI/UX design intelligence with searchable database | ui-ux-pro-max | C:\GymTracker\.opencode\skills\ui-ux-pro-max\SKILL.md |
 
 ## Compact Rules
 
 Pre-digested rules per skill. Delegators copy matching blocks into sub-agent prompts as `## Project Standards (auto-resolved)`.
 
-### accessibility
-- Use semantic HTML first; add ARIA only when native semantics cannot express the behavior.
-- Ensure keyboard access for every interactive control; no keyboard traps.
-- Keep visible focus states with sufficient contrast; never remove outlines without replacing them.
-- Meet WCAG 2.2 AA contrast targets and do not rely on color alone for errors or state.
-- Give icon-only controls accessible names and decorative graphics empty alt/`aria-hidden` treatment.
-- Preserve skip links, focus order, and scroll offsets so focused content is not hidden by sticky UI.
-
 ### branch-pr
-- Every PR MUST link exactly one approved issue before opening.
-- Branch names must follow `type/description` with lowercase `a-z0-9._-`.
-- PR body must include issue linkage, summary bullets, file changes, and a concrete test plan.
-- Add exactly one `type:*` label matching the change category.
+- Every PR MUST link an approved issue and include exactly one `type:*` label.
+- Use branch names `type/description` matching `^(feat|fix|chore|docs|style|refactor|perf|test|build|ci|revert)/[a-z0-9._-]+$`.
 - Use conventional commits only; never add `Co-Authored-By` trailers.
-- Run required validation relevant to the changed area before requesting review.
-
-### find-skills
-- Treat skill discovery as a package search problem: identify domain, task, and likely reusable workflow.
-- Check popular/high-trust sources first; do not recommend obscure skills blindly.
-- Prefer skills with meaningful install counts and reputable maintainers.
-- Present the install command and why the skill matches the user’s need.
-- If no good skill exists, say so clearly and offer direct help or suggest creating one.
-
-### frontend-design
-- Choose a strong visual direction before coding; intentionality matters more than ornament.
-- Start from typography, color system, composition, and motion rather than default component libraries.
-- Avoid generic AI aesthetics, timid palettes, and repetitive SaaS-card layouts.
-- Use memorable hierarchy, spacing, and visual anchors tailored to the product context.
-- Match implementation complexity to the chosen aesthetic: bold ideas need deliberate execution, not clutter.
-
-### frontend-skill
-- Start with visual thesis, content plan, and interaction thesis before building.
-- Prefer full-bleed or dominant visual composition; treat the first viewport like a poster.
-- Default to cardless layouts; use cards only when the card itself is the interaction.
-- Give each section one job, one dominant idea, and one primary takeaway.
-- Use short utility-first copy for app surfaces; avoid marketing filler in operational UIs.
-- Ship 2-3 intentional motions that improve hierarchy or atmosphere, not noise.
+- PR body MUST include issue linkage, summary bullets, file changes table, and test plan.
+- Run required validation before merge; blank PRs or missing issue linkage will be blocked.
 
 ### go-testing
-- Prefer table-driven tests for logic with multiple scenarios.
-- Test Bubble Tea model transitions directly before reaching for full integration tests.
-- Use teatest for interactive TUI flows and golden files for stable visual output.
-- Cover success, failure, and edge cases explicitly; do not stop at happy paths.
-- Use `t.TempDir()` and dependency seams for file system or process side effects.
+- Prefer table-driven tests for pure or multi-case logic.
+- Test Bubble Tea state transitions by calling `Update()` directly before using higher-level flows.
+- Use `teatest.NewTestModel()` for end-to-end TUI interaction flows.
+- Use golden files for stable rendered output comparisons.
+- Use `t.TempDir()` and mocked dependencies for filesystem/system side effects.
 
 ### issue-creation
-- Blank issues are disabled; always use the proper GitHub issue template.
-- Search for duplicates before creating a new bug or feature request.
-- Fill every required field, including reproduction steps or problem statement.
-- New issues land in `status:needs-review`; implementation waits for maintainer approval.
+- Always search for duplicates before opening a new issue.
+- Use the repository issue templates; blank issues are not allowed.
+- New issues receive `status:needs-review`; implementation waits for maintainer `status:approved`.
 - Questions belong in Discussions, not Issues.
+- Use conventional issue titles like `fix(scope): ...` or `feat(scope): ...`.
 
 ### judgment-day
-- Never self-review; launch two blind judges in parallel with identical scope and standards.
-- Resolve relevant project skills first and inject compact rules into judge/fix prompts.
-- Classify warnings as real vs theoretical based on realistic user-triggered impact.
-- Fix only confirmed issues, then re-judge; stop after two iterations unless the user asks to continue.
-- If no skill registry exists, warn that review falls back to generic standards.
-
-### seo
-- Ensure crawlability basics: robots, canonicals, sitemap, HTTPS, and indexable URLs.
-- Give every page a unique, descriptive title and meta description aligned with its content.
-- Maintain proper heading hierarchy with one clear `<h1>` per page.
-- Optimize image filenames, alt text, dimensions, and lazy loading.
-- Prefer clean, lowercase, keyword-relevant URLs without unnecessary parameters.
+- Resolve relevant compact rules from the registry BEFORE launching judges.
+- Launch exactly two blind judges in parallel with identical scope and standards.
+- Classify warnings as `real` vs `theoretical`; only real warnings block approval.
+- Present Round 1 findings and get user confirmation before fixing confirmed issues.
+- Re-judge after confirmed critical fixes; after 2 fix iterations, escalate to the user.
 
 ### skill-creator
 - Create a skill only for reusable, non-trivial patterns or workflows.
-- Follow the standard `skills/{name}/SKILL.md` structure with complete frontmatter.
-- Put the most critical patterns first; keep examples minimal and focused.
-- Use `assets/` for templates/schemas and `references/` only for local docs.
-- Register the new skill in the relevant instructions/index after creation.
+- Use the standard structure: `skills/{skill-name}/SKILL.md` with optional `assets/` and `references/`.
+- Frontmatter MUST include `name`, `description` with Trigger text, `license`, and metadata.
+- Keep critical patterns actionable and examples minimal; do not duplicate existing docs.
+- Register the new skill in `AGENTS.md` after creation.
+
+### accessibility
+- Every meaningful image needs alt text; decorative images use empty alt and presentation semantics.
+- All interactive controls need accessible names, visible focus states, and keyboard support.
+- Maintain WCAG AA contrast and never rely on color alone for state or errors.
+- Provide skip links, associated labels, and screen-reader error announcements.
+- Respect `prefers-reduced-motion` and ensure touch targets are at least 24x24 CSS px.
+
+### frontend-design
+- Choose a bold, explicit aesthetic direction before coding and keep it consistent.
+- Start with typography, color system, motion, and composition; avoid generic AI-looking UI.
+- Prefer distinctive fonts, strong visual hierarchy, and contextual atmospherics over default patterns.
+- Match implementation complexity to the design vision: maximalism needs richer code, minimalism needs precision.
+- Never default to cliché gradients, generic card grids, or overused font choices.
+
+### frontend-skill
+- Start with composition, not components; each section gets one job and one dominant idea.
+- Treat the first viewport as a poster with strong brand hierarchy and a real visual anchor.
+- Default to cardless layouts; use cards only when the card itself is the interaction.
+- Keep copy short, utilitarian where needed, and remove filler aggressively.
+- Ship 2-3 intentional motions that improve hierarchy or atmosphere without noise.
+
+### seo
+- Ensure crawlability with correct `robots.txt`, meta robots, canonical URLs, and sitemap coverage.
+- Write unique title tags and meta descriptions with natural keyword placement.
+- Maintain semantic heading hierarchy with one clear `<h1>` per page.
+- Use descriptive, optimized image filenames and alt text.
+- Prefer clean HTTPS URLs and avoid duplicate or parameter-heavy canonical pages.
+
+### find-skills
+- When users ask for a capability, identify the domain and search for an existing skill first.
+- Check the skills leaderboard before CLI search when possible.
+- Verify quality before recommending: installs, source reputation, and GitHub credibility.
+- Present the skill with what it does, source, installs, and exact install command.
+- If no fit exists, offer direct help and suggest creating a custom skill if the pattern recurs.
 
 ### ui-ux-pro-max
-- Start with the `--design-system` search flow before implementing UI.
-- Use the local searchable datasets to derive pattern, palette, typography, and anti-patterns.
-- Persist design-system output when the project needs reusable master/page overrides.
+- Start every UI/UX task by generating a design system with `search.py --design-system`.
 - Default stack guidance to `html-tailwind` unless the user specifies another stack.
-- Validate interaction polish: real iconography, stable hover states, accessible motion, and contrast.
+- Supplement the design system with focused domain searches for UX, typography, charts, or style.
+- Use SVG icon systems, stable hover states, visible focus, and responsive checks across key breakpoints.
+- Avoid emoji icons, low-contrast light mode surfaces, invisible borders, and layout-shifting hover effects.
 
 ## Project Conventions
 
 | File | Path | Notes |
 |------|------|-------|
-| — | — | No project-root convention files (`AGENTS.md`, `CLAUDE.md`, `.cursorrules`, `GEMINI.md`, `copilot-instructions.md`) were found in `C:\GymTracker`. |
+| — | — | No project convention index files detected at the repository root. |
 
 Read the convention files listed above for project-specific patterns and rules. All referenced paths have been extracted — no need to read index files to discover more.

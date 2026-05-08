@@ -14,6 +14,7 @@ vitest.config.d.ts
 Thumbs.db
 
 # Local tool/runtime artifacts
+.atl/
 .opencode/node_modules/
 __pycache__/
 *.pyc
