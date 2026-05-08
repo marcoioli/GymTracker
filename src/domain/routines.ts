@@ -227,6 +227,36 @@ export function createRoutineWeek(index: number, dayCount = 1): RoutineWeek {
   }
 }
 
+export function cloneRoutineWeekStructure(sourceWeek: RoutineWeek, label = sourceWeek.label): RoutineWeek {
+  const normalizedWeek = normalizeRoutineWeek(sourceWeek as LegacyRoutineWeek)
+
+  return {
+    id: crypto.randomUUID(),
+    label,
+    days: normalizedWeek.days.map((day) => ({
+      id: crypto.randomUUID(),
+      label: day.label,
+      exercises: day.exercises.map((exercise) => {
+        const normalizedExercise = normalizeRoutineExercise(exercise)
+
+        return {
+          id: crypto.randomUUID(),
+          name: normalizedExercise.name,
+          targetSets: normalizedExercise.setReferences.length,
+          targetRir: normalizedExercise.targetRir,
+          muscle: normalizedExercise.muscle,
+          setReferences: normalizedExercise.setReferences.map((reference) =>
+            createExerciseSetReference({
+              repsTarget: reference.repsTarget,
+              rirTarget: reference.rirTarget
+            })
+          )
+        }
+      })
+    }))
+  }
+}
+
 export function isValidDayCount(dayCount: number): boolean {
   return Number.isInteger(dayCount) && dayCount >= ROUTINE_DAY_MIN && dayCount <= ROUTINE_DAY_MAX
 }
