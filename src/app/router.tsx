@@ -13,6 +13,7 @@ import { AppRouteErrorBoundary, NotFoundPage } from './error-boundary'
 import { AppStatusDeck } from './pwa-runtime'
 
 const HistoryPage = lazy(async () => ({ default: (await import('../features/history/HistoryPage')).HistoryPage }))
+const HistorySessionDetailPage = lazy(async () => ({ default: (await import('../features/history/HistorySessionDetailPage')).HistorySessionDetailPage }))
 const AnalyticsPage = lazy(async () => ({ default: (await import('../features/analytics/AnalyticsPage')).AnalyticsPage }))
 const BackupPage = lazy(async () => ({ default: (await import('../features/backup/BackupPage')).BackupPage }))
 
@@ -191,6 +192,10 @@ const router = createBrowserRouter([
       {
         path: 'history',
         element: <HistoryPage />
+      },
+      {
+        path: 'history/:sessionId',
+        element: <HistorySessionDetailPage />
       },
       {
         path: 'more',
