@@ -1,12 +1,14 @@
 import { render, screen } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import userEvent from '@testing-library/user-event'
+import { MemoryRouter, Route, Routes } from 'react-router-dom'
 
 import { db } from '../../db/database'
 import { HistoryPage } from './HistoryPage'
 import { saveWorkoutSession } from '../session/sessionRepository'
+import { HistorySessionDetailPage } from './HistorySessionDetailPage'
 
 describe('HistoryPage', () => {
-  it('shows frozen session details even after the routine template changes', async () => {
+  it('keeps the history list focused and opens the frozen snapshot in a dedicated page', async () => {
     await db.routines.add({
       id: 'routine-1',
       name: 'Upper A',
@@ -80,16 +82,27 @@ describe('HistoryPage', () => {
       updatedAt: '2026-05-06T10:00:00.000Z'
     })
 
+    const user = userEvent.setup()
+
     render(
-      <MemoryRouter>
-        <HistoryPage />
+      <MemoryRouter initialEntries={['/history?range=month']}>
+        <Routes>
+          <Route path="/history" element={<HistoryPage />} />
+          <Route path="/history/:sessionId" element={<HistorySessionDetailPage />} />
+        </Routes>
       </MemoryRouter>
     )
 
     expect((await screen.findAllByRole('heading', { name: /upper a/i })).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/semana base · push pesado/i)).not.toHaveLength(0)
-    expect(screen.getByText(/snapshot congelado/i)).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /press banca/i })).toBeInTheDocument()
+    expect(screen.queryByText(/snapshot congelado/i)).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /press banca/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /ver detalle/i }))
+
+    expect(await screen.findByText(/snapshot congelado/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /push pesado/i, level: 2 })).toBeInTheDocument()
+    expect(screen.getAllByText(/semana base · upper a/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/1300 kg volumen/i)).toBeInTheDocument()
     expect(screen.queryByText(/upper b/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/press inclinado/i)).not.toBeInTheDocument()
