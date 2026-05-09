@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
+import { useTheme } from '../../app/theme-context'
 import { getCurrentWeekFrequencySummary, getWeeklyVolumeSummaries } from '../../domain/analytics'
 import { db } from '../../db/database'
 import { Card, EmptyState, PageSection } from '../../shared/ui'
@@ -9,6 +10,7 @@ import { Card, EmptyState, PageSection } from '../../shared/ui'
 export function MorePage() {
   const routines = useLiveQuery(() => db.routines.toArray(), [], [])
   const sessions = useLiveQuery(() => db.sessions.orderBy('endedAt').reverse().toArray(), [], [])
+  const { setTheme, theme } = useTheme()
   const activeRoutine = useMemo(() => routines.find((routine) => routine.status === 'active') ?? null, [routines])
   const weeklyFrequency = getCurrentWeekFrequencySummary(sessions)
   const weeklyVolume = getWeeklyVolumeSummaries(sessions, 1)[0]?.totalVolume ?? 0
@@ -44,6 +46,33 @@ export function MorePage() {
             <MetricChip label="Volumen" value={`${Math.round(weeklyVolume).toLocaleString('es-AR')} kg`} />
           </div>
         </Card>
+      </PageSection>
+
+      <PageSection
+        description="Acceso rápido a apariencia hasta que exista la pantalla de Configuración formal."
+        title="Configuración"
+        titleId="more-settings-title"
+      >
+        <div className="theme-inline-setting">
+          <div className="theme-inline-setting__copy">
+            <p className="eyebrow">Apariencia</p>
+            <strong className="theme-inline-setting__title">Tema claro</strong>
+            <span className="theme-inline-setting__hint">Activalo para usar una base blanca en toda la app.</span>
+          </div>
+
+          <button
+            aria-checked={theme === 'light'}
+            aria-label={theme === 'light' ? 'Desactivar tema claro' : 'Activar tema claro'}
+            className="theme-switch"
+            onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+            role="switch"
+            type="button"
+          >
+            <span className="theme-switch__track">
+              <span className="theme-switch__thumb" />
+            </span>
+          </button>
+        </div>
       </PageSection>
 
       <PageSection
@@ -119,7 +148,7 @@ function getCurrentStreak(sessions: Array<{ endedAt: string }>): number {
   }
 
   let streak = 0
-  let expectedDate = new Date(`${uniqueDays[0]}T00:00:00.000Z`)
+  const expectedDate = new Date(`${uniqueDays[0]}T00:00:00.000Z`)
 
   for (const day of uniqueDays) {
     const current = new Date(`${day}T00:00:00.000Z`)

@@ -3,6 +3,10 @@
 :root {
   color-scheme: dark;
   font-family: 'Barlow', sans-serif;
+  --app-body-background:
+    radial-gradient(circle at top, rgba(255, 122, 26, 0.22), transparent 24%),
+    linear-gradient(180deg, #140b08 0%, #090606 100%);
+  --app-root-background: radial-gradient(circle at top center, rgba(255, 122, 26, 0.14), transparent 22%), #0b0b0b;
   --color-bg: #0c0807;
   --color-surface: #17100d;
   --color-surface-2: #221713;
@@ -38,9 +42,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background:
-    radial-gradient(circle at top, rgba(255, 122, 26, 0.22), transparent 24%),
-    linear-gradient(180deg, #140b08 0%, #090606 100%);
+  background: var(--app-body-background);
   color: var(--color-text);
 }
 
@@ -1444,6 +1446,89 @@ textarea {
   gap: 12px;
 }
 
+.theme-inline-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 0;
+}
+
+.theme-inline-setting__copy {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.theme-inline-setting__title {
+  font-size: 0.98rem;
+}
+
+.theme-inline-setting__hint {
+  color: var(--color-text-muted);
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.theme-switch {
+  flex-shrink: 0;
+  min-height: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  transition: transform 180ms ease;
+}
+
+.theme-switch__track {
+  width: 58px;
+  height: 34px;
+  padding: 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  background: rgba(255, 122, 26, 0.18);
+  border: 1px solid rgba(255, 122, 26, 0.22);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), inset 0 0 0 1px rgba(255, 122, 26, 0.06);
+  transition: background-color 180ms ease, border-color 180ms ease, transform 180ms ease, box-shadow 180ms ease;
+}
+
+.theme-switch__thumb {
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #fff4ec, #ffd7bf);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  transition: transform 180ms ease, background 180ms ease, box-shadow 180ms ease, filter 180ms ease;
+}
+
+.theme-switch[aria-checked='true'] .theme-switch__track {
+  background: linear-gradient(180deg, rgba(255, 138, 52, 0.28), rgba(255, 138, 52, 0.18));
+  border-color: rgba(255, 138, 52, 0.32);
+  box-shadow: inset 0 1px 0 rgba(255, 244, 236, 0.24), 0 0 0 4px rgba(255, 122, 26, 0.08);
+}
+
+.theme-switch[aria-checked='true'] .theme-switch__thumb {
+  transform: translateX(24px);
+  background: linear-gradient(180deg, #ffffff, #fff1e5);
+  box-shadow: 0 10px 18px rgba(255, 122, 26, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.7);
+  filter: saturate(1.05);
+}
+
+.theme-switch:hover {
+  transform: translateY(-1px);
+}
+
+.theme-switch:hover .theme-switch__track {
+  border-color: rgba(255, 138, 52, 0.34);
+}
+
+.theme-switch:focus-visible {
+  outline: 3px solid rgba(249, 115, 22, 0.36);
+  outline-offset: 4px;
+  border-radius: 999px;
+}
+
 .module-link-card {
   position: relative;
   display: grid;
@@ -1519,7 +1604,7 @@ textarea {
 
 html,
 body {
-  background: #0b0b0b;
+  background: var(--design-black);
 }
 
 body {
@@ -1528,7 +1613,7 @@ body {
 }
 
 #root {
-  background: radial-gradient(circle at top center, rgba(255, 122, 26, 0.14), transparent 22%), #0b0b0b;
+  background: var(--app-root-background);
 }
 
 .app-shell {
@@ -2447,6 +2532,216 @@ body {
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, #ff9c59, var(--color-primary));
+}
+
+:root[data-theme='light'] {
+  color-scheme: light;
+  --app-body-background:
+    radial-gradient(circle at top, rgba(223, 109, 22, 0.16), transparent 22%),
+    linear-gradient(180deg, #fffefb 0%, #f3ece4 100%);
+  --app-root-background:
+    radial-gradient(circle at top center, rgba(223, 109, 22, 0.12), transparent 22%),
+    linear-gradient(180deg, #faf5ef 0%, #f1e8de 100%);
+  --color-bg: #f6efe7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f4ebe2;
+  --color-border: rgba(111, 89, 70, 0.14);
+  --color-text: #1e1712;
+  --color-text-muted: #6a5d52;
+  --color-primary: #cf6416;
+  --color-cta: #db6d19;
+  --surface-card: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(244, 236, 227, 0.98));
+  --surface-card-subtle: rgba(248, 241, 234, 0.94);
+  --surface-card-highlight: linear-gradient(180deg, rgba(255, 250, 245, 1), rgba(243, 231, 219, 0.98));
+  --feedback-success-bg: rgba(34, 197, 94, 0.12);
+  --feedback-success-border: rgba(34, 197, 94, 0.22);
+  --feedback-success-text: #166534;
+  --feedback-info-bg: rgba(37, 99, 235, 0.1);
+  --feedback-info-border: rgba(37, 99, 235, 0.18);
+  --feedback-info-text: #1d4ed8;
+  --feedback-error-bg: rgba(239, 68, 68, 0.1);
+  --feedback-error-border: rgba(239, 68, 68, 0.18);
+  --feedback-error-text: #b91c1c;
+  --feedback-warning-bg: rgba(245, 158, 11, 0.12);
+  --feedback-warning-border: rgba(245, 158, 11, 0.2);
+  --feedback-warning-text: #b45309;
+  --shadow-lg: 0 26px 62px rgba(120, 85, 53, 0.14);
+  --design-black: #f6efe7;
+  --design-surface: #ffffff;
+  --design-surface-2: #f5ebe1;
+  --design-border: rgba(111, 89, 70, 0.12);
+  --design-border-strong: rgba(207, 100, 22, 0.3);
+  --design-text: #1e1712;
+  --design-text-muted: #6a5d52;
+  --design-accent: #cf6416;
+  --design-accent-strong: #db6d19;
+  --design-shadow: 0 22px 52px rgba(120, 85, 53, 0.12);
+  --light-panel: linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(245, 237, 228, 0.96));
+  --light-panel-strong: linear-gradient(180deg, rgba(255, 251, 247, 1), rgba(242, 230, 218, 0.98));
+  --light-glass: rgba(255, 255, 255, 0.8);
+  --light-glass-strong: rgba(255, 255, 255, 0.9);
+  --light-border-soft: rgba(111, 89, 70, 0.1);
+  --light-accent-wash: rgba(219, 109, 25, 0.12);
+  --light-accent-wash-strong: rgba(219, 109, 25, 0.18);
+}
+
+:root[data-theme='light'] .skip-link,
+:root[data-theme='light'] .sidebar-toggle,
+:root[data-theme='light'] .sidebar-close,
+:root[data-theme='light'] .workouts-shell-header__menu,
+:root[data-theme='light'] .secondary-button,
+:root[data-theme='light'] .ghost-button,
+:root[data-theme='light'] .track-set-input,
+:root[data-theme='light'] .track-set-input--routine,
+:root[data-theme='light'] .routine-series-planner__remove,
+:root[data-theme='light'] .bottom-nav,
+:root[data-theme='light'] .filter-chip,
+:root[data-theme='light'] .track-set-grid__index,
+:root[data-theme='light'] .routine-series-planner__index,
+:root[data-theme='light'] .mini-bar-track {
+  background: var(--light-glass-strong);
+  border-color: var(--light-border-soft);
+  color: var(--design-text);
+  box-shadow: 0 10px 24px rgba(120, 85, 53, 0.06);
+}
+
+:root[data-theme='light'] .sidebar-backdrop {
+  background: rgba(66, 41, 19, 0.16);
+}
+
+:root[data-theme='light'] .sidebar,
+:root[data-theme='light'] .history-detail-screen {
+  background: radial-gradient(circle at top left, rgba(223, 109, 22, 0.12), transparent 34%), var(--light-panel-strong);
+  border-color: var(--light-border-soft);
+}
+
+:root[data-theme='light'] .sidebar__copy,
+:root[data-theme='light'] .empty-note,
+:root[data-theme='light'] .history-empty-state,
+:root[data-theme='light'] .routine-exercise-planner,
+:root[data-theme='light'] .routine-series-planner {
+  background: var(--light-glass);
+  border-color: var(--light-border-soft);
+  box-shadow: 0 14px 32px rgba(120, 85, 53, 0.06);
+}
+
+:root[data-theme='light'] .ui-card,
+:root[data-theme='light'] .tracker-history-card,
+:root[data-theme='light'] .track-exercise-card,
+:root[data-theme='light'] .history-detail-card,
+:root[data-theme='light'] .history-session-card,
+:root[data-theme='light'] .routine-card,
+:root[data-theme='light'] .module-link-card,
+:root[data-theme='light'] .week-card,
+:root[data-theme='light'] .history-summary-card,
+:root[data-theme='light'] .profile-spotlight-card,
+:root[data-theme='light'] .session-summary-card,
+:root[data-theme='light'] .ui-card--highlight,
+:root[data-theme='light'] .tracker-focus-card,
+:root[data-theme='light'] .track-workout-hero,
+:root[data-theme='light'] .tracker-week-overview {
+  background: var(--light-panel);
+  border-color: var(--light-border-soft);
+  box-shadow: 0 18px 38px rgba(120, 85, 53, 0.08);
+}
+
+:root[data-theme='light'] .tracker-week-overview {
+  background: radial-gradient(circle at top left, rgba(223, 109, 22, 0.14), transparent 55%), var(--light-panel-strong);
+}
+
+:root[data-theme='light'] .tracker-week-overview__today-pill,
+:root[data-theme='light'] .filter-chip.active,
+:root[data-theme='light'] .secondary-button,
+:root[data-theme='light'] .history-session-card--selected,
+:root[data-theme='light'] .routine-card--premium.ui-card--highlight,
+:root[data-theme='light'] .routine-card--premium.ui-card--default:hover {
+  background: var(--light-accent-wash);
+  border-color: rgba(207, 100, 22, 0.22);
+}
+
+:root[data-theme='light'] .tracker-week-overview__day,
+:root[data-theme='light'] .module-link-card,
+:root[data-theme='light'] .future-module-card,
+:root[data-theme='light'] .meta-card,
+:root[data-theme='light'] .stat-inline-card,
+:root[data-theme='light'] .metric-chip,
+:root[data-theme='light'] .history-preview-tag {
+  background: rgba(252, 247, 242, 0.94);
+  border-color: var(--light-border-soft);
+  color: var(--design-text);
+}
+
+:root[data-theme='light'] .tracker-week-overview__day.is-today {
+  background: linear-gradient(180deg, rgba(219, 109, 25, 0.22), rgba(219, 109, 25, 0.1));
+  border-color: rgba(207, 100, 22, 0.3);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.68);
+}
+
+:root[data-theme='light'] .tracker-week-overview__day.is-today span,
+:root[data-theme='light'] .tracker-week-overview__day.is-today strong,
+:root[data-theme='light'] .cta-button,
+:root[data-theme='light'] .workouts-primary-cta,
+:root[data-theme='light'] .profile-avatar {
+  color: #fff7f0;
+}
+
+:root[data-theme='light'] .bottom-nav__item,
+:root[data-theme='light'] .track-set-input::placeholder,
+:root[data-theme='light'] .ghost-button,
+:root[data-theme='light'] .theme-inline-setting__hint,
+:root[data-theme='light'] .history-preview-tag,
+:root[data-theme='light'] .workouts-segmented-nav__link,
+:root[data-theme='light'] .track-workout-hero__field--muted strong,
+:root[data-theme='light'] .track-workout-hero__field span,
+:root[data-theme='light'] .track-set-grid--head,
+:root[data-theme='light'] .track-set-grid__previous,
+:root[data-theme='light'] .routine-series-planner__head,
+:root[data-theme='light'] .routine-exercise-planner__summary span,
+:root[data-theme='light'] .future-module-card span,
+:root[data-theme='light'] .metric-chip span {
+  color: var(--design-text-muted);
+}
+
+:root[data-theme='light'] .workouts-segmented-nav,
+:root[data-theme='light'] .track-workout-hero__field,
+:root[data-theme='light'] .history-detail-stat:not(:last-child) {
+  border-color: rgba(111, 89, 70, 0.12);
+}
+
+:root[data-theme='light'] .ghost-button--danger,
+:root[data-theme='light'] .routine-exercise-planner__remove-exercise {
+  color: #c2410c;
+  border-color: rgba(194, 65, 12, 0.18);
+  background: rgba(255, 247, 240, 0.9);
+}
+
+:root[data-theme='light'] .cta-button,
+:root[data-theme='light'] .workouts-primary-cta {
+  background: linear-gradient(135deg, #e9853a, var(--color-cta));
+  box-shadow: 0 18px 30px rgba(219, 109, 25, 0.22);
+}
+
+:root[data-theme='light'] .theme-switch__track {
+  background: rgba(219, 109, 25, 0.16);
+  border-color: rgba(207, 100, 22, 0.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72), inset 0 0 0 1px rgba(219, 109, 25, 0.05);
+}
+
+:root[data-theme='light'] .theme-switch__thumb {
+  background: linear-gradient(180deg, #fffdfb, #f7e7d9);
+  box-shadow: 0 8px 18px rgba(120, 85, 53, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.76);
+}
+
+:root[data-theme='light'] .theme-switch[aria-checked='true'] .theme-switch__track {
+  background: linear-gradient(180deg, rgba(219, 109, 25, 0.24), rgba(219, 109, 25, 0.14));
+  border-color: rgba(207, 100, 22, 0.28);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8), 0 0 0 4px rgba(219, 109, 25, 0.1);
+}
+
+:root[data-theme='light'] .profile-avatar,
+:root[data-theme='light'] .mini-bar-track__fill,
+:root[data-theme='light'] .activity-chart__bar {
+  background: linear-gradient(180deg, #ea9551, var(--color-primary));
 }
 
 .analytics-trend-grid--bars {
