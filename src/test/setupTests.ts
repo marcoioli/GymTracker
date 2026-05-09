@@ -8,6 +8,9 @@ import { db } from '../db/database'
 
 afterEach(async () => {
   cleanup()
+  window.localStorage.clear()
+  document.documentElement.removeAttribute('data-theme')
+  document.documentElement.style.removeProperty('color-scheme')
 
   await db.transaction('rw', db.routines, db.exerciseCatalog, db.sessions, db.appState, async () => {
     await Promise.all([db.routines.clear(), db.exerciseCatalog.clear(), db.sessions.clear(), db.appState.clear()])
