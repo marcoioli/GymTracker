@@ -11,7 +11,8 @@ test('exporta un backup local y permite restaurarlo por reemplazo', async ({ pag
   })
   await activateRoutine(page, 'Rutina backup seed')
 
-  await page.getByRole('link', { name: /respaldo/i }).click()
+  await page.getByRole('link', { name: /más/i }).click()
+  await page.getByRole('link', { name: /guardar y recuperar datos/i }).click()
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: /exportar backup/i }).click()
   const download = await downloadPromise
@@ -25,7 +26,8 @@ test('exporta un backup local y permite restaurarlo por reemplazo', async ({ pag
     days: [{ label: 'Pull', exercises: ['Remo con barra'] }]
   })
 
-  await page.getByRole('link', { name: /respaldo/i }).click()
+  await page.getByRole('link', { name: /más/i }).click()
+  await page.getByRole('link', { name: /guardar y recuperar datos/i }).click()
   await page.getByLabel(/seleccionar archivo de backup/i).setInputFiles(downloadPath!)
 
   await expect(page.getByRole('heading', { name: /listo para restaurar/i })).toBeVisible()
@@ -33,7 +35,7 @@ test('exporta un backup local y permite restaurarlo por reemplazo', async ({ pag
   await expect(page.getByRole('status')).toContainText(/backup restaurado/i)
 
   await page.getByRole('link', { name: /inicio/i }).click()
-  await expect(page.getByRole('heading', { name: /rutina activa: rutina backup seed/i })).toBeVisible()
+  await expect(page.locator('.tracker-focus-card').filter({ hasText: 'Rutina backup seed' })).toBeVisible()
 
   await page.getByRole('link', { name: /rutinas/i }).click()
   await expect(page.getByRole('heading', { name: 'Rutina backup seed' })).toBeVisible()
