@@ -52,8 +52,8 @@ describe('WorkoutSessionScreen', () => {
 
     renderSessionScreen()
 
-    expect(await screen.findByText(/última referencia: 8 reps · 70 kg · rir 1/i)).toBeInTheDocument()
-    expect(screen.getByText(/sin referencia previa para esta serie/i)).toBeInTheDocument()
+    expect(await screen.findByText(/\(70 kg\) × 8/i)).toBeInTheDocument()
+    expect(screen.getByText(/^—$/)).toBeInTheDocument()
   })
 
   it('shows visible saving feedback and returns with a success flag', async () => {
