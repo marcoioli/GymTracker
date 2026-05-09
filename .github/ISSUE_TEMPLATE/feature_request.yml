@@ -1,0 +1,43 @@
+name: Feature request
+description: Propose a new feature, enhancement, or small improvement.
+title: "feat: "
+labels:
+  - enhancement
+body:
+  - type: checkboxes
+    id: preflight
+    attributes:
+      label: Pre-flight
+      options:
+        - label: I searched for duplicates
+          required: true
+        - label: I understand this issue should exist before the implementation branch/PR
+          required: true
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What pain point or opportunity are we addressing?
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: Describe the desired behavior from the user's perspective.
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: Mention screens, flows, modules, or technical areas impacted.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Validation idea
+      description: How should we validate this when implemented?
+    validations:
+      required: false

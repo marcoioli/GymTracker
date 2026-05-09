@@ -729,6 +729,12 @@ textarea {
   margin-top: clamp(14px, 4vw, 16px);
 }
 
+.week-card-tools {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+}
+
 .field-group,
 .ui-field {
   display: grid;
