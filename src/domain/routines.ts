@@ -238,14 +238,15 @@ export function cloneRoutineWeekStructure(sourceWeek: RoutineWeek, label = sourc
       label: day.label,
       exercises: day.exercises.map((exercise) => {
         const normalizedExercise = normalizeRoutineExercise(exercise)
+        const setReferences = normalizedExercise.setReferences ?? normalizeExerciseSetReferences(undefined, normalizedExercise.targetSets, normalizedExercise.targetRir)
 
         return {
           id: crypto.randomUUID(),
           name: normalizedExercise.name,
-          targetSets: normalizedExercise.setReferences.length,
+          targetSets: setReferences.length,
           targetRir: normalizedExercise.targetRir,
           muscle: normalizedExercise.muscle,
-          setReferences: normalizedExercise.setReferences.map((reference) =>
+          setReferences: setReferences.map((reference) =>
             createExerciseSetReference({
               repsTarget: reference.repsTarget,
               rirTarget: reference.rirTarget
