@@ -28,7 +28,7 @@ test('mantiene la rutina activa y distingue rutinas pausadas después de recarga
 
   await page.getByRole('link', { name: 'Inicio' }).click()
   await page.reload()
-  await expect(page.getByRole('heading', { name: /rutina activa: rutina activa persistida/i })).toBeVisible()
+  await expect(page.locator('.tracker-focus-card').filter({ hasText: 'Rutina activa persistida' })).toBeVisible()
 })
 
 test('muestra empty states claros cuando no hay sesiones en historial ni métricas', async ({ page }) => {

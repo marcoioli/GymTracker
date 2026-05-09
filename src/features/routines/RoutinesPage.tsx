@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import { db } from '../../db/database'
 import {
+  cloneRoutineWeekStructure,
   DEFAULT_MUSCLE_GROUP,
   createExerciseSetReference,
   createRoutineDay,
@@ -281,7 +282,7 @@ export function RoutinesPage() {
             </Field>
 
             <div className="week-stack">
-              {formState.weeks.map((week) => (
+              {formState.weeks.map((week, weekIndex) => (
                 <article className="week-card" key={week.id}>
                   <div className="week-card-header">
                     <Field label="Nombre de la semana">
@@ -320,6 +321,23 @@ export function RoutinesPage() {
                       />
                     </Field>
                   </div>
+
+                  {weekIndex > 0 ? (
+                    <div className="week-card-tools">
+                      <Button
+                        size="compact"
+                        variant="secondary"
+                        onClick={() => {
+                          updateFormState(setFormState, (current) => ({
+                            ...current,
+                            weeks: repeatWeekFromPrevious(current.weeks, weekIndex)
+                          }))
+                        }}
+                      >
+                        Repetir semana anterior
+                      </Button>
+                    </div>
+                  ) : null}
 
                   <div className="day-stack">
                     {week.days.map((day, dayIndex) => (
@@ -565,6 +583,19 @@ function resizeDays(days: RoutineDay[], dayCount: number): RoutineDay[] {
   }
 
   return [...days, ...Array.from({ length: dayCount - days.length }, (_, index) => createRoutineDay(days.length + index))]
+}
+
+function repeatWeekFromPrevious(weeks: RoutineWeek[], weekIndex: number): RoutineWeek[] {
+  const sourceWeek = weeks[weekIndex - 1]
+  const targetWeek = weeks[weekIndex]
+
+  if (!sourceWeek || !targetWeek) {
+    return weeks
+  }
+
+  return weeks.map((week, index) =>
+    index === weekIndex ? cloneRoutineWeekStructure(sourceWeek, targetWeek.label) : week
+  )
 }
 
 function updateDay(weeks: RoutineWeek[], weekId: string, dayId: string, patch: Partial<RoutineDay>): RoutineWeek[] {

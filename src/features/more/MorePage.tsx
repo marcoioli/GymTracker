@@ -119,7 +119,7 @@ function getCurrentStreak(sessions: Array<{ endedAt: string }>): number {
   }
 
   let streak = 0
-  let expectedDate = new Date(`${uniqueDays[0]}T00:00:00.000Z`)
+  const expectedDate = new Date(`${uniqueDays[0]}T00:00:00.000Z`)
 
   for (const day of uniqueDays) {
     const current = new Date(`${day}T00:00:00.000Z`)
