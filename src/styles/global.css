@@ -659,6 +659,12 @@ textarea {
   padding: clamp(14px, 4vw, 16px);
 }
 
+.week-card,
+.day-card {
+  display: grid;
+  gap: clamp(16px, 4vw, 18px);
+}
+
 .routine-card-header,
 .week-card-header {
   display: flex;
@@ -666,6 +672,10 @@ textarea {
   justify-content: space-between;
   align-items: flex-start;
   flex-wrap: wrap;
+}
+
+.week-card-header {
+  gap: clamp(14px, 4vw, 18px);
 }
 
 .status-pill {
@@ -2209,7 +2219,7 @@ body {
 
 .routine-exercise-planner__top {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .routine-exercise-planner__summary {
@@ -2233,7 +2243,7 @@ body {
 
 .routine-series-planner {
   display: grid;
-  gap: 12px;
+  gap: 14px;
   padding: 14px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.025);
@@ -2637,6 +2647,7 @@ body {
 :root[data-theme='light'] .history-detail-card,
 :root[data-theme='light'] .history-session-card,
 :root[data-theme='light'] .routine-card,
+:root[data-theme='light'] .day-card,
 :root[data-theme='light'] .module-link-card,
 :root[data-theme='light'] .week-card,
 :root[data-theme='light'] .history-summary-card,
@@ -2671,7 +2682,8 @@ body {
 :root[data-theme='light'] .meta-card,
 :root[data-theme='light'] .stat-inline-card,
 :root[data-theme='light'] .metric-chip,
-:root[data-theme='light'] .history-preview-tag {
+:root[data-theme='light'] .history-preview-tag,
+:root[data-theme='light'] .ui-empty-state {
   background: rgba(252, 247, 242, 0.94);
   border-color: var(--light-border-soft);
   color: var(--design-text);
@@ -2712,6 +2724,20 @@ body {
 :root[data-theme='light'] .track-workout-hero__field,
 :root[data-theme='light'] .history-detail-stat:not(:last-child) {
   border-color: rgba(111, 89, 70, 0.12);
+}
+
+:root[data-theme='light'] .text-input,
+:root[data-theme='light'] select.text-input,
+:root[data-theme='light'] textarea.text-input {
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--design-text);
+  border-color: rgba(111, 89, 70, 0.16);
+  box-shadow: 0 8px 20px rgba(120, 85, 53, 0.06);
+}
+
+:root[data-theme='light'] select.text-input option {
+  background: #fffdfb;
+  color: var(--design-text);
 }
 
 :root[data-theme='light'] .ghost-button--danger,
