@@ -34,7 +34,7 @@ export async function parseBackupFile(file: File): Promise<GymTrackerBackup> {
   try {
     parsed = JSON.parse(fileContents) as unknown
   } catch {
-    throw new Error('El archivo no contiene un JSON válido para restaurar GymTracker.')
+    throw new Error('El archivo no contiene un JSON válido para restaurar Treino.')
   }
 
   const validation = validateBackupPayload(parsed)

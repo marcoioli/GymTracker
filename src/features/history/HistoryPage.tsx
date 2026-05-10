@@ -96,8 +96,7 @@ export function HistoryPage() {
   return (
     <>
       <PageSection
-        description="Historial real de sesiones guardadas y snapshots de cada ejercicio."
-        eyebrow="History"
+        headerHidden
         title="Workout History"
         titleId="history-title"
       >

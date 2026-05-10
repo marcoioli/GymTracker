@@ -36,14 +36,14 @@ export function validateBackupPayload(input: unknown): BackupValidationResult {
   if (!isRecord(input)) {
     return {
       success: false,
-      error: 'El archivo no tiene el formato JSON esperado para un backup de GymTracker.'
+        error: 'El archivo no tiene el formato JSON esperado para un backup de Treino.'
     }
   }
 
   if (input.kind !== GYMTRACKER_BACKUP_KIND) {
     return {
       success: false,
-      error: 'El archivo no pertenece a un backup local válido de GymTracker.'
+        error: 'El archivo no pertenece a un backup local válido de Treino.'
     }
   }
 

@@ -19,8 +19,7 @@ export function MorePage() {
   return (
     <>
       <PageSection
-        description="Analytics, backup y estado general de la app."
-        eyebrow="More"
+        headerHidden
         title="More"
         titleId="more-title"
       >
