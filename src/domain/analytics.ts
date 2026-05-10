@@ -301,8 +301,8 @@ function buildExerciseMilestoneSummary(occurrences: ExerciseOccurrence[]): Exerc
       (bestWeightKg !== null && occurrence.bestWeightKg === bestWeightKg) ||
       (bestSetVolume !== null && occurrence.bestSetVolume === bestSetVolume)
   ).length
-  const latestBestWeightAt = bestWeightKg === null ? null : occurrences.findLast((occurrence) => occurrence.bestWeightKg === bestWeightKg)?.performedAt ?? null
-  const latestBestSetAt = bestSetVolume === null ? null : occurrences.findLast((occurrence) => occurrence.bestSetVolume === bestSetVolume)?.performedAt ?? null
+  const latestBestWeightAt = bestWeightKg === null ? null : findLatestOccurrenceDate(occurrences, (occurrence) => occurrence.bestWeightKg === bestWeightKg)
+  const latestBestSetAt = bestSetVolume === null ? null : findLatestOccurrenceDate(occurrences, (occurrence) => occurrence.bestSetVolume === bestSetVolume)
 
   return {
     exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
@@ -319,6 +319,21 @@ function buildExerciseMilestoneSummary(occurrences: ExerciseOccurrence[]): Exerc
 
 function getExerciseHistoryKey(exerciseTemplateId: string | null, exerciseName: string): string {
   return normalizeExerciseName(exerciseTemplateId ?? exerciseName)
+}
+
+function findLatestOccurrenceDate(
+  occurrences: ExerciseOccurrence[],
+  predicate: (occurrence: ExerciseOccurrence) => boolean
+): string | null {
+  for (let index = occurrences.length - 1; index >= 0; index -= 1) {
+    const occurrence = occurrences[index]
+
+    if (predicate(occurrence)) {
+      return occurrence.performedAt
+    }
+  }
+
+  return null
 }
 
 function getSetVolume(reps: number | null, weightKg: number | null): number | null {
