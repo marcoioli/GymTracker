@@ -1157,6 +1157,55 @@ textarea {
   font-size: clamp(1.2rem, 4.5vw, 1.4rem);
 }
 
+.record-badge-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.record-badge-row--detail {
+  margin-top: 4px;
+}
+
+.record-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-height: 24px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 138, 52, 0.68);
+  background: rgba(22, 22, 24, 0.98);
+  box-shadow: none;
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #f7f4ef;
+}
+
+.record-badge::before {
+  content: '';
+  width: 11px;
+  height: 11px;
+  flex: 0 0 11px;
+  background-color: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3Cpath d='M7 4h10v3a5 5 0 0 1-10 0V4Z'/%3E%3Cpath d='M17 5h3a2 2 0 0 1-2 2h-1'/%3E%3Cpath d='M7 5H4a2 2 0 0 0 2 2h1'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3Cpath d='M7 4h10v3a5 5 0 0 1-10 0V4Z'/%3E%3Cpath d='M17 5h3a2 2 0 0 1-2 2h-1'/%3E%3Cpath d='M7 5H4a2 2 0 0 0 2 2h1'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.record-badge--weight {
+  border-color: rgba(255, 138, 52, 0.72);
+}
+
+.record-badge--set {
+  border-color: rgba(255, 138, 52, 0.58);
+}
+
 .history-set-row {
   border-radius: clamp(14px, 4vw, 16px);
   padding: clamp(10px, 3vw, 12px);
@@ -2701,6 +2750,21 @@ body {
 :root[data-theme='light'] .workouts-primary-cta,
 :root[data-theme='light'] .profile-avatar {
   color: #fff7f0;
+}
+
+:root[data-theme='light'] .record-badge {
+  background: rgba(255, 251, 247, 0.98);
+  border-color: rgba(207, 100, 22, 0.62);
+  box-shadow: none;
+  color: #1e1712;
+}
+
+:root[data-theme='light'] .record-badge--weight {
+  border-color: rgba(207, 100, 22, 0.62);
+}
+
+:root[data-theme='light'] .record-badge--set {
+  border-color: rgba(207, 100, 22, 0.52);
 }
 
 :root[data-theme='light'] .bottom-nav__item,

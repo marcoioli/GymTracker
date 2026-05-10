@@ -4,6 +4,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import {
   getCurrentWeekFrequencySummary,
+  getExerciseMilestoneSummary,
   getExerciseProgressPoints,
   getRoutineAdherenceSummary,
   getWeeklyVolumeSummaries,
@@ -58,6 +59,7 @@ export function AnalyticsPage() {
     .filter((routine) => effectiveSelectedRoutineId === 'all' || routine.id === effectiveSelectedRoutineId)
     .map((routine) => ({ routine, summary: getRoutineAdherenceSummary(routine, sessions) }))
   const progressPoints = effectiveSelectedExerciseKey ? getExerciseProgressPoints(filteredSessions, effectiveSelectedExerciseKey) : []
+  const progressSummary = effectiveSelectedExerciseKey ? getExerciseMilestoneSummary(filteredSessions, effectiveSelectedExerciseKey) : null
 
   return (
     <>
@@ -165,10 +167,30 @@ export function AnalyticsPage() {
 
       {progressPoints.length > 0 ? (
         <PageSection
-          description="La progresión usa sesiones reales guardadas. Peso, reps y volumen sin depender de la plantilla actual."
+          description="La progresión usa sesiones reales guardadas. Peso, volumen por serie y badges de récord salen del historial inmutable, no de la plantilla actual."
           title={`Progreso: ${exerciseOptions.find((option) => option.key === effectiveSelectedExerciseKey)?.label ?? 'Ejercicio'}`}
           titleId="analytics-progress-title"
         >
+          {progressSummary ? (
+            <div className="kpi-grid analytics-kpi-grid analytics-kpi-grid--records">
+              <AnalyticsKpi
+                label="Mejor peso"
+                value={progressSummary.bestWeightKg !== null ? `${progressSummary.bestWeightKg} kg` : 'Sin dato'}
+                caption={progressSummary.latestBestWeightAt ? formatWorkoutDate(progressSummary.latestBestWeightAt) : 'Sin registro válido'}
+              />
+              <AnalyticsKpi
+                label="Mejor serie"
+                value={progressSummary.bestSetVolume !== null ? formatCompactVolume(progressSummary.bestSetVolume) : 'Sin dato'}
+                caption={progressSummary.latestBestSetAt ? formatWorkoutDate(progressSummary.latestBestSetAt) : 'Sin registro válido'}
+              />
+              <AnalyticsKpi
+                label="Sesiones con récord"
+                value={`${progressSummary.sessionsWithAnyMilestone}`}
+                caption={progressSummary.latestMilestoneAt ? `Último hito ${formatWorkoutDate(progressSummary.latestMilestoneAt)}` : 'Sin hitos todavía'}
+              />
+            </div>
+          ) : null}
+
           <div className="analytics-progress-stack">
             {progressPoints.map((point) => (
               <ProgressPointCard key={`${point.sessionId}:${point.performedAt}`} point={point} />
@@ -222,7 +244,15 @@ function ProgressPointCard({ point }: { point: ExerciseProgressPoint }) {
       <div className="history-session-meta">
         <span>{point.totalReps} reps totales</span>
         <span>{formatCompactVolume(point.totalVolume)} volumen</span>
+        <span>{point.bestSetVolume !== null ? `${formatCompactVolume(point.bestSetVolume)} mejor serie` : 'Sin serie válida'}</span>
       </div>
+
+      {point.hitBestWeight || point.hitBestSet ? (
+        <div className="record-badge-row" aria-label={`Hitos de ${point.exerciseName} en ${formatWorkoutDate(point.performedAt)}`}>
+          {point.hitBestWeight ? <span className="record-badge record-badge--weight">Mejor peso</span> : null}
+          {point.hitBestSet ? <span className="record-badge record-badge--set">Mejor serie</span> : null}
+        </div>
+      ) : null}
     </Card>
   )
 }

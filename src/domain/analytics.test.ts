@@ -1,5 +1,6 @@
 import {
   getCurrentWeekFrequencySummary,
+  getExerciseMilestoneSummary,
   getExerciseProgressPoints,
   getRoutineAdherenceSummary,
   getWeeklyVolumeSummaries,
@@ -140,18 +141,79 @@ describe('analytics selectors', () => {
         sessionId: 'session-1',
         performedAt: '2026-05-04T09:45:00.000Z',
         bestWeightKg: 82.5,
+        bestSetVolume: 660,
         totalReps: 16,
-        totalVolume: 1300
+        totalVolume: 1300,
+        hitBestWeight: false,
+        hitBestSet: false
       },
       {
         exerciseName: 'Press banca',
         sessionId: 'session-2',
         performedAt: '2026-05-12T09:45:00.000Z',
         bestWeightKg: 85,
+        bestSetVolume: 742.5,
         totalReps: 17,
-        totalVolume: 1422.5
+        totalVolume: 1422.5,
+        hitBestWeight: true,
+        hitBestSet: true
       }
     ])
+  })
+
+  it('tracks best weight and best set as separate historical milestones', () => {
+    const milestoneSessions: WorkoutSession[] = [
+      sessions[0],
+      {
+        ...sessions[1],
+        exercises: [
+          {
+            ...sessions[1].exercises[0],
+            sets: [
+              { id: 'set-3', setNumber: 1, reps: 10, weightKg: 80, actualRir: 2 },
+              { id: 'set-4', setNumber: 2, reps: 8, weightKg: 85, actualRir: 1 }
+            ]
+          }
+        ]
+      }
+    ]
+
+    expect(getExerciseProgressPoints(milestoneSessions, 'exercise-1')).toEqual([
+      {
+        exerciseName: 'Press banca',
+        sessionId: 'session-1',
+        performedAt: '2026-05-04T09:45:00.000Z',
+        bestWeightKg: 82.5,
+        bestSetVolume: 660,
+        totalReps: 16,
+        totalVolume: 1300,
+        hitBestWeight: false,
+        hitBestSet: false
+      },
+      {
+        exerciseName: 'Press banca',
+        sessionId: 'session-2',
+        performedAt: '2026-05-12T09:45:00.000Z',
+        bestWeightKg: 85,
+        bestSetVolume: 800,
+        totalReps: 18,
+        totalVolume: 1480,
+        hitBestWeight: true,
+        hitBestSet: true
+      }
+    ])
+
+    expect(getExerciseMilestoneSummary(milestoneSessions, 'exercise-1')).toEqual({
+      exerciseName: 'Press banca',
+      bestWeightKg: 85,
+      bestSetVolume: 800,
+      sessionsWithBestWeight: 1,
+      sessionsWithBestSet: 1,
+      sessionsWithAnyMilestone: 1,
+      latestBestWeightAt: '2026-05-12T09:45:00.000Z',
+      latestBestSetAt: '2026-05-12T09:45:00.000Z',
+      latestMilestoneAt: '2026-05-12T09:45:00.000Z'
+    })
   })
 
   it('ignores invalid exercise fragments and stale progress safely', () => {
