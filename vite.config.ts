@@ -7,11 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/app-icon.svg', 'icons/apple-touch-icon.svg'],
+      includeAssets: ['icons/treino-app-icon.png', 'icons/treino-brand-mark.png'],
       manifest: {
-        name: 'GymTracker',
-        short_name: 'GymTracker',
-        description: 'PWA personal para seguir rutinas y entrenamientos de gimnasio.',
+        name: 'Treino',
+        short_name: 'Treino',
+        description: 'App personal para seguir rutinas, sesiones y progreso de entrenamiento.',
         theme_color: '#101826',
         background_color: '#101826',
         display: 'standalone',
@@ -19,10 +19,16 @@ export default defineConfig({
         scope: '/',
         icons: [
           {
-            src: '/icons/app-icon.svg',
+            src: '/icons/treino-app-icon.png',
             sizes: '512x512',
-            type: 'image/svg+xml',
-            purpose: 'any maskable'
+            type: 'image/png',
+            purpose: 'any'
+          },
+          {
+            src: '/icons/treino-app-icon.png',
+            sizes: '512x512',
+            type: 'image/png',
+            purpose: 'maskable'
           }
         ]
       }

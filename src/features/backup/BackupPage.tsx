@@ -168,7 +168,7 @@ export function BackupPage() {
                 </div>
 
                 <StatusBanner className="backup-warning" tone="warning">
-                  OJO: si confirmás, GymTracker reemplaza tus datos locales actuales por este backup. No hay merge ni cloud salvadora.
+                  OJO: si confirmás, Treino reemplaza tus datos locales actuales por este backup. No hay merge ni cloud salvadora.
                 </StatusBanner>
 
                 <p className="empty-note">Exportado: {formatBackupDate(pendingBackup.exportedAt)}</p>
@@ -197,7 +197,7 @@ export function BackupPage() {
 
           {!pendingBackup ? (
             <EmptyState
-              description="Elegí un archivo JSON exportado por GymTracker y recién después vas a ver la previsualización con confirmación destructiva."
+              description="Elegí un archivo JSON exportado por Treino y recién después vas a ver la previsualización con confirmación destructiva."
               title="Todavía no cargaste un backup"
             />
           ) : null}

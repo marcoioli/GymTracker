@@ -1686,6 +1686,36 @@ body {
   padding: calc(16px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom));
 }
 
+.app-brand-header {
+  margin-bottom: 18px;
+  animation: mobile-fade-up 220ms var(--motion-snap);
+}
+
+.app-brand-header__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--design-text);
+}
+
+.app-brand-header__mark {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.16));
+}
+
+.app-brand-header__wordmark {
+  font-family: 'Barlow', sans-serif;
+  font-size: 1.9rem;
+  font-weight: 700;
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
 .app-main--mobile {
   display: grid;
   gap: 18px;
@@ -1742,17 +1772,6 @@ body {
   gap: 14px;
   margin-bottom: 18px;
   animation: mobile-fade-up 260ms var(--motion-snap);
-}
-
-.workouts-shell-header__top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.workouts-shell-header__top h1 {
-  margin: 0;
-  font-size: 2rem;
 }
 
 .workouts-shell-header__menu {

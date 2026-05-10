@@ -110,19 +110,17 @@ function RootLayout() {
         Saltar al contenido
       </a>
 
+      <header className="app-brand-header" aria-label="Treino">
+        <NavLink aria-label="Abrir Treino" className="app-brand-header__link" to="/">
+          <img alt="" aria-hidden="true" className="app-brand-header__mark" src="/icons/logoTreinoPNG.png" />
+          <span className="app-brand-header__wordmark">Treino</span>
+        </NavLink>
+      </header>
+
       <AppStatusDeck />
 
       {isWorkoutsHub ? (
         <header className="workouts-shell-header" aria-label="Encabezado de workouts">
-          <div className="workouts-shell-header__top">
-            <h1>Workouts</h1>
-            <span aria-hidden="true" className="workouts-shell-header__menu">
-              <span />
-              <span />
-              <span />
-            </span>
-          </div>
-
           <nav aria-label="Cambiar vista de workouts" className="workouts-segmented-nav">
             <NavLink className={({ isActive }) => `workouts-segmented-nav__link${isActive ? ' active' : ''}`} end to="/">
               Tracker

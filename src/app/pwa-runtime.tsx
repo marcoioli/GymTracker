@@ -105,7 +105,7 @@ export function AppStatusDeck() {
       {canInstall ? (
         <StatusBanner tone="success">
           <div className="ui-status-banner__content">
-            <strong>Instala GymTracker.</strong>
+            <strong>Instalá Treino.</strong>
             <span>Vas a abrirlo como app y el acceso offline queda mas directo cuando entrenas.</span>
           </div>
           <div className="ui-status-banner__actions">
