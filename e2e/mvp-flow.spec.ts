@@ -11,7 +11,7 @@ test('completa el flujo principal del MVP para demo local', async ({ page }) => 
 
   await expect(page.getByText(/todavía no hay entrenamientos/i)).toBeVisible()
 
-  await page.getByRole('link', { name: 'Rutinas' }).click()
+  await page.getByLabel('Cambiar vista de workouts').getByRole('link', { name: 'Rutinas' }).click()
 
   await expect(page).toHaveURL(/\/routines$/)
   await page.getByRole('button', { name: /nueva rutina/i }).click()
@@ -74,7 +74,7 @@ test('completa el flujo principal del MVP para demo local', async ({ page }) => 
   await expect(page.getByRole('status')).toContainText(/sesión guardada como terminada antes/i)
 
   await page.getByRole('link', { name: 'Historial' }).click()
-  await expect(page.getByRole('heading', { name: 'Workout History' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'Historial de entrenamientos' })).toBeVisible()
   await expect(page.getByText(/sesiones encontradas: 1/i)).toBeVisible()
   await expect(page.locator('.history-session-card').filter({ hasText: 'Terminada antes' }).first()).toBeVisible()
   await expect(page.locator('.history-session-card').filter({ hasText: 'Upper / Lower Demo' }).first()).toBeVisible()
