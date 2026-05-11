@@ -47,6 +47,7 @@ export function RoutinesPage() {
   const exerciseCatalog = useLiveQuery(() => db.exerciseCatalog.orderBy('name').toArray(), [], [])
   const [formState, setFormState] = useState<RoutineFormState | null>(null)
   const [weekCountInput, setWeekCountInput] = useState('')
+  const [dayCountInputs, setDayCountInputs] = useState<Record<string, string>>({})
   const [isSaving, setIsSaving] = useState(false)
   const [isTogglingRoutine, setIsTogglingRoutine] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -59,19 +60,23 @@ export function RoutinesPage() {
   )
 
   function openCreateRoutineForm() {
-    setFormState(INITIAL_FORM_STATE())
+    const nextFormState = INITIAL_FORM_STATE()
+    setFormState(nextFormState)
     setWeekCountInput('')
+    setDayCountInputs(toDayCountInputs(nextFormState.weeks))
   }
 
   function openEditRoutineForm(routine: Routine) {
     const nextFormState = toFormState(routine)
     setFormState(nextFormState)
     setWeekCountInput(String(nextFormState.weeks.length))
+    setDayCountInputs(toDayCountInputs(nextFormState.weeks))
   }
 
   function closeRoutineForm() {
     setFormState(null)
     setWeekCountInput('')
+    setDayCountInputs({})
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -242,9 +247,29 @@ export function RoutinesPage() {
           title={formState.id ? 'Editar rutina' : 'Nueva rutina'}
           titleId="routine-form-title"
           actions={
-            <Button size="compact" variant="ghost" onClick={closeRoutineForm}>
-              Cancelar
-            </Button>
+            <div className="routine-form-actions">
+              <Button
+                size="compact"
+                variant="danger"
+                onClick={() => {
+                  const hasAnyDays = formState.weeks.some((week) => week.days.length > 0)
+
+                  if (!hasAnyDays || !window.confirm('¿Vaciar toda la rutina y borrar todos los días cargados?')) {
+                    return
+                  }
+
+                  const clearedWeeks = formState.weeks.map((week) => ({ ...week, days: [] }))
+                  setFormState((current) => (current ? { ...current, weeks: clearedWeeks } : current))
+                  setDayCountInputs(toDayCountInputs(clearedWeeks))
+                }}
+              >
+                Vaciar rutina
+              </Button>
+
+              <Button size="compact" variant="ghost" onClick={closeRoutineForm}>
+                Cancelar
+              </Button>
+            </div>
           }
         >
           <form className="routine-form" onSubmit={handleSubmit}>
@@ -304,9 +329,20 @@ export function RoutinesPage() {
                       <FieldInput
                         min={1}
                         type="number"
-                        value={week.days.length === 0 ? '' : String(week.days.length)}
+                        value={dayCountInputs[week.id] ?? (week.days.length === 0 ? '' : String(week.days.length))}
+                        onBlur={() => {
+                          setDayCountInputs((current) => ({
+                            ...current,
+                            [week.id]: week.days.length === 0 ? '' : String(week.days.length)
+                          }))
+                        }}
                         onChange={(event) => {
                           const nextValue = event.target.value
+                          setDayCountInputs((current) => ({ ...current, [week.id]: nextValue }))
+
+                          if (nextValue.trim() === '') {
+                            return
+                          }
 
                           updateFormState(setFormState, (current) => ({
                             ...current,
@@ -315,17 +351,18 @@ export function RoutinesPage() {
                                 return currentWeek
                               }
 
-                              if (nextValue.trim() === '') {
-                                return { ...currentWeek, days: [] }
-                              }
+                              const nextDays = resolveWeekDaysFromCountInput(currentWeek.days, nextValue, currentWeek.label)
 
-                              const dayCount = Number(nextValue)
-
-                              if (!Number.isInteger(dayCount) || dayCount < 1) {
+                              if (nextDays === currentWeek.days) {
                                 return currentWeek
                               }
 
-                              return { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) }
+                              setDayCountInputs((inputs) => ({
+                                ...inputs,
+                                [week.id]: nextDays.length === 0 ? '' : String(nextDays.length)
+                              }))
+
+                              return { ...currentWeek, days: nextDays }
                             })
                           }))
                         }}
@@ -333,22 +370,49 @@ export function RoutinesPage() {
                     </Field>
                   </div>
 
-                  {weekIndex > 0 ? (
-                    <div className="week-card-tools">
+                  <div className="week-card-tools">
+                    {weekIndex > 0 ? (
                       <Button
                         size="compact"
                         variant="secondary"
                         onClick={() => {
-                          updateFormState(setFormState, (current) => ({
-                            ...current,
-                            weeks: repeatWeekFromPrevious(current.weeks, weekIndex)
-                          }))
+                          updateFormState(setFormState, (current) => {
+                            const nextWeeks = repeatWeekFromPrevious(current.weeks, weekIndex)
+                            setDayCountInputs(toDayCountInputs(nextWeeks))
+                            return {
+                              ...current,
+                              weeks: nextWeeks
+                            }
+                          })
                         }}
                       >
                         Repetir semana anterior
                       </Button>
-                    </div>
-                  ) : null}
+                    ) : null}
+
+                    <Button
+                      size="compact"
+                      variant="danger"
+                      onClick={() => {
+                        if (week.days.length === 0 || !window.confirm(`¿Vaciar ${week.label || `semana ${weekIndex + 1}`} y borrar todos sus días?`)) {
+                          return
+                        }
+
+                        updateFormState(setFormState, (current) => {
+                          const nextWeeks = current.weeks.map((currentWeek) =>
+                            currentWeek.id === week.id ? { ...currentWeek, days: [] } : currentWeek
+                          )
+                          setDayCountInputs(toDayCountInputs(nextWeeks))
+                          return {
+                            ...current,
+                            weeks: nextWeeks
+                          }
+                        })
+                      }}
+                    >
+                      Vaciar semana
+                    </Button>
+                  </div>
 
                   <div className="day-stack">
                     {week.days.map((day, dayIndex) => (
@@ -467,20 +531,6 @@ export function RoutinesPage() {
                                         }))
                                       }}
                                     />
-
-                                    <button
-                                      aria-label={`Repetir serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
-                                      className="routine-series-planner__duplicate"
-                                      type="button"
-                                      onClick={() => {
-                                        updateFormState(setFormState, (current) => ({
-                                          ...current,
-                                          weeks: duplicateExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id)
-                                        }))
-                                      }}
-                                    >
-                                      +
-                                    </button>
 
                                     <button
                                       aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
@@ -613,6 +663,36 @@ function resizeDays(days: RoutineDay[], dayCount: number): RoutineDay[] {
   return [...days, ...Array.from({ length: dayCount - days.length }, (_, index) => createRoutineDay(days.length + index))]
 }
 
+function toDayCountInputs(weeks: RoutineWeek[]): Record<string, string> {
+  return Object.fromEntries(weeks.map((week) => [week.id, week.days.length === 0 ? '' : String(week.days.length)]))
+}
+
+function hasMeaningfulDays(days: RoutineDay[]): boolean {
+  return days.some((day) => day.label.trim().length > 0 || day.exercises.length > 0)
+}
+
+function resolveWeekDaysFromCountInput(currentDays: RoutineDay[], nextValue: string, weekLabel: string): RoutineDay[] {
+  if (nextValue.trim() === '') {
+    return currentDays
+  }
+
+  const dayCount = Number(nextValue)
+
+  if (!Number.isInteger(dayCount) || dayCount < 1 || dayCount === currentDays.length) {
+    return currentDays
+  }
+
+  if (dayCount < currentDays.length) {
+    const removedDays = currentDays.slice(dayCount)
+
+    if (hasMeaningfulDays(removedDays) && !window.confirm(`Reducir ${weekLabel || 'esta semana'} va a borrar ${removedDays.length} día(s) cargado(s). ¿Querés continuar?`)) {
+      return currentDays
+    }
+  }
+
+  return resizeDays(currentDays, dayCount)
+}
+
 function repeatWeekFromPrevious(weeks: RoutineWeek[], weekIndex: number): RoutineWeek[] {
   const sourceWeek = weeks[weekIndex - 1]
   const targetWeek = weeks[weekIndex]
@@ -677,33 +757,16 @@ function updateExerciseSetReference(
 }
 
 function addExerciseSetReference(weeks: RoutineWeek[], weekId: string, dayId: string, exerciseId: string): RoutineWeek[] {
-  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => [
-    ...references,
-    createExerciseSetReference({ rirTarget: references.at(-1)?.rirTarget ?? '' })
-  ])
-}
-
-function duplicateExerciseSetReference(
-  weeks: RoutineWeek[],
-  weekId: string,
-  dayId: string,
-  exerciseId: string,
-  setReferenceId: string
-): RoutineWeek[] {
   return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => {
-    const duplicateIndex = references.findIndex((reference) => reference.id === setReferenceId)
+    const previousReference = references.at(-1)
 
-    if (duplicateIndex === -1) {
-      return references
-    }
-
-    const source = references[duplicateIndex]
-    const clonedReference = createExerciseSetReference({
-      repsTarget: source.repsTarget,
-      rirTarget: source.rirTarget
-    })
-
-    return [...references.slice(0, duplicateIndex + 1), clonedReference, ...references.slice(duplicateIndex + 1)]
+    return [
+      ...references,
+      createExerciseSetReference({
+        repsTarget: previousReference?.repsTarget ?? '',
+        rirTarget: previousReference?.rirTarget ?? ''
+      })
+    ]
   })
 }
 

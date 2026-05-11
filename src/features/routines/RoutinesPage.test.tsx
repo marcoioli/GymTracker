@@ -121,7 +121,7 @@ describe('RoutinesPage', () => {
     })
   }, 15000)
 
-  it('starts new exercises with one empty set and can repeat a filled series', async () => {
+  it('starts new exercises with one empty set and duplicates the previous series from agregar serie', async () => {
     const user = userEvent.setup()
 
     render(
@@ -136,11 +136,12 @@ describe('RoutinesPage', () => {
 
     expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(1)
     expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /repetir serie/i })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText(/repeticiones objetivo serie 1/i), { target: { value: '6-8' } })
     fireEvent.change(screen.getByLabelText(/rir objetivo serie 1/i), { target: { value: '1' } })
 
-    await user.click(screen.getByRole('button', { name: /repetir serie 1 del ejercicio 1/i }))
+    await user.click(screen.getByRole('button', { name: /agregar serie/i }))
 
     expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(2)
     expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(2)
@@ -161,6 +162,105 @@ describe('RoutinesPage', () => {
 
     expect(screen.getByLabelText(/^días$/i)).toHaveValue(null)
     expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument()
+  })
+
+  it('allows clearing the day-count input temporarily and reduces days after confirmation', async () => {
+    const routineId = 'routine-preserve-days'
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await db.routines.add({
+      id: routineId,
+      name: 'Rutina guardada',
+      status: 'paused',
+      weekCount: 1,
+      progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
+      createdAt: '2026-05-05T10:00:00.000Z',
+      updatedAt: '2026-05-05T10:00:00.000Z',
+      weeks: [
+        {
+          id: 'week-1',
+          label: 'Semana 1',
+          days: [
+            { id: 'day-1', label: 'Push', exercises: [] },
+            { id: 'day-2', label: 'Pull', exercises: [] }
+          ]
+        }
+      ]
+    })
+
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <RoutinesPage />
+      </MemoryRouter>
+    )
+
+    await user.click(await screen.findByRole('button', { name: /editar/i }))
+
+    const dayCountInput = screen.getByLabelText(/^días$/i)
+    fireEvent.change(dayCountInput, { target: { value: '' } })
+    expect(dayCountInput).toHaveValue(null)
+    expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(2)
+
+    fireEvent.blur(dayCountInput)
+    expect(dayCountInput).toHaveValue(2)
+
+    fireEvent.change(dayCountInput, { target: { value: '1' } })
+    expect(confirmSpy).toHaveBeenCalled()
+    expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(1)
+    expect(dayCountInput).toHaveValue(1)
+
+    confirmSpy.mockRestore()
+  })
+
+  it('can explicitly vaciar semana y vaciar rutina', async () => {
+    const routineId = 'routine-clear-actions'
+    const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+
+    await db.routines.add({
+      id: routineId,
+      name: 'Rutina vaciable',
+      status: 'paused',
+      weekCount: 2,
+      progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
+      createdAt: '2026-05-05T10:00:00.000Z',
+      updatedAt: '2026-05-05T10:00:00.000Z',
+      weeks: [
+        {
+          id: 'week-1',
+          label: 'Semana 1',
+          days: [{ id: 'day-1', label: 'Push', exercises: [] }]
+        },
+        {
+          id: 'week-2',
+          label: 'Semana 2',
+          days: [{ id: 'day-2', label: 'Pull', exercises: [] }]
+        }
+      ]
+    })
+
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <RoutinesPage />
+      </MemoryRouter>
+    )
+
+    await user.click(await screen.findByRole('button', { name: /editar/i }))
+    await user.click(screen.getAllByRole('button', { name: /vaciar semana/i })[0])
+
+    expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(1)
+    expect(screen.getAllByLabelText(/^días$/i)[0]).toHaveValue(null)
+    expect(screen.getAllByLabelText(/^días$/i)[1]).toHaveValue(1)
+
+    await user.click(screen.getByRole('button', { name: /vaciar rutina/i }))
+    expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument()
+    expect(screen.getAllByLabelText(/^días$/i)[0]).toHaveValue(null)
+    expect(screen.getAllByLabelText(/^días$/i)[1]).toHaveValue(null)
+
+    confirmSpy.mockRestore()
   })
 
   it('repeats the previous week while editing without mutating the source week', async () => {

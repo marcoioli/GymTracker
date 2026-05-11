@@ -739,9 +739,15 @@ textarea {
   margin-top: clamp(14px, 4vw, 16px);
 }
 
+.routine-form-actions,
 .week-card-tools {
   display: flex;
   justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.week-card-tools {
   margin-top: 12px;
 }
 
@@ -2454,7 +2460,6 @@ body {
   font-weight: 700;
 }
 
-.routine-series-planner__duplicate,
 .routine-series-planner__remove {
   min-height: 42px;
   min-width: 42px;
@@ -2463,10 +2468,6 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   color: var(--design-text-muted);
-}
-
-.routine-series-planner__duplicate {
-  color: var(--design-accent);
 }
 
 .routine-series-planner__remove:disabled {
@@ -2509,7 +2510,6 @@ body {
 .tracker-week-overview__day:active,
 .routine-exercise-planner__add-set:active,
 .routine-exercise-planner__remove-exercise:active,
-.routine-series-planner__duplicate:active,
 .routine-series-planner__remove:active {
   transform: scale(0.98);
 }
@@ -2796,7 +2796,6 @@ body {
 :root[data-theme='light'] .ghost-button,
 :root[data-theme='light'] .track-set-input,
 :root[data-theme='light'] .track-set-input--routine,
-:root[data-theme='light'] .routine-series-planner__duplicate,
 :root[data-theme='light'] .routine-series-planner__remove,
 :root[data-theme='light'] .bottom-nav,
 :root[data-theme='light'] .filter-chip,
