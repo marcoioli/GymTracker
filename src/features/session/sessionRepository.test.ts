@@ -40,6 +40,7 @@ describe('sessionRepository', () => {
       dayId,
       weekIndex: 0,
       status: 'completed',
+      notes: '  mantener pausa abajo  ',
       startedAt: '2026-05-04T10:00:00.000Z',
       endedAt: '2026-05-04T10:40:00.000Z',
       exercises: [
@@ -50,6 +51,7 @@ describe('sessionRepository', () => {
           targetSets: 2,
           targetRir: 1,
           muscle: 'Pecho',
+          notes: '  abrir pecho y no apurar la bajada  ',
           sets: [
             { id: 'set-1', setNumber: 1, reps: 8, weightKg: 80, actualRir: 2 },
             { id: 'set-2', setNumber: 2, reps: 8, weightKg: 80, actualRir: 1 }
@@ -60,7 +62,9 @@ describe('sessionRepository', () => {
 
     const references = await getPreviousSessionReferences(routineId, dayId)
 
-    expect(references[exerciseId]?.sets[0]).toEqual({ reps: 8, weightKg: 80, actualRir: 2 })
+    expect(references.sessionNote).toBe('mantener pausa abajo')
+    expect(references.exercises[exerciseId]?.notes).toBe('abrir pecho y no apurar la bajada')
+    expect(references.exercises[exerciseId]?.sets[0]).toEqual({ reps: 8, weightKg: 80, actualRir: 2 })
 
     const savedSession = await saveWorkoutSession({
       routineId,
@@ -69,10 +73,12 @@ describe('sessionRepository', () => {
       startedAt: '2026-05-05T11:00:00.000Z',
       endedAt: '2026-05-05T11:20:00.000Z',
       status: 'ended-early',
+      notes: '  la sesión quedó cortada por tiempo  ',
       exercises: [
         {
           exerciseId,
           exerciseName: 'Press banca',
+          notes: '  mejor empuje con pies firmes  ',
           sets: [
             { reps: '10', weightKg: '82.5', actualRir: '1' },
             { reps: '', weightKg: '', actualRir: '' }
@@ -85,6 +91,7 @@ describe('sessionRepository', () => {
     const updatedRoutine = await db.routines.get(routineId)
 
     expect(savedSession.status).toBe('ended-early')
+    expect(savedSession.notes).toBe('la sesión quedó cortada por tiempo')
     expect(savedSession.routineName).toBe('Upper A')
     expect(savedSession.weekLabel).toBe('Semana 1')
     expect(savedSession.dayLabel).toBe('Push pesado')
@@ -93,6 +100,7 @@ describe('sessionRepository', () => {
       { setNumber: 2, reps: null, weightKg: null, actualRir: null }
     ])
     expect(savedSession.exercises[0]?.muscle).toBe('Pecho')
+    expect(savedSession.exercises[0]?.notes).toBe('mejor empuje con pies firmes')
     expect(previousSession?.status).toBe('completed')
     expect(previousSession?.exercises[0].sets[0]).toMatchObject({ reps: 8, weightKg: 80, actualRir: 2 })
     expect(updatedRoutine?.progress).toEqual({
@@ -135,7 +143,7 @@ describe('sessionRepository', () => {
       exercises: [{ id: 'broken', exerciseTemplateId: null, exerciseName: '   ', targetSets: 1, targetRir: null, sets: [], muscle: 'PG' }]
     })
 
-    expect(await getPreviousSessionReferences(routineId, dayId)).toEqual({})
+    expect(await getPreviousSessionReferences(routineId, dayId)).toEqual({ exercises: {} })
 
     const savedSession = await saveWorkoutSession({
       routineId,

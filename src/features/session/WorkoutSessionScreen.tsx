@@ -4,12 +4,13 @@ import { useLiveQuery } from 'dexie-react-hooks'
 
 import { db } from '../../db/database'
 import { getRoutineDaySelection, normalizeExerciseName } from '../../domain/routines'
-import { Button, Card, EmptyState, PageSection, StatusBanner } from '../../shared/ui'
+import { Button, Card, EmptyState, Field, FieldTextarea, PageSection, StatusBanner } from '../../shared/ui'
 import {
   getPreviousSessionReferences,
   getWorkoutDayLabel,
   saveWorkoutSession,
   type PreviousExerciseReference,
+  type PreviousSessionContext,
   type SessionExerciseInput
 } from './sessionRepository'
 
@@ -21,7 +22,7 @@ export function WorkoutSessionScreen() {
   const [searchParams] = useSearchParams()
   const startedAt = searchParams.get('startedAt') ?? new Date().toISOString()
   const routine = useLiveQuery(() => db.routines.get(routineId), [routineId], undefined)
-  const previousReferences = useLiveQuery(() => getPreviousSessionReferences(routineId, dayId), [routineId, dayId], {})
+  const previousSessionContext = useLiveQuery(() => getPreviousSessionReferences(routineId, dayId), [routineId, dayId], { exercises: {} })
 
   const selection = useMemo(() => {
     if (!routine) {
@@ -53,7 +54,7 @@ export function WorkoutSessionScreen() {
     <WorkoutSessionForm
       key={`${routine.id}:${selection.weekIndex}:${selection.day.id}:${startedAt}`}
       navigateHome={(status) => navigate(status ? `/?sessionSaved=${status}` : '/')}
-      previousReferences={previousReferences}
+      previousSessionContext={previousSessionContext}
       routineId={routine.id}
       routineName={routine.name}
       selection={selection}
@@ -64,14 +65,14 @@ export function WorkoutSessionScreen() {
 
 function WorkoutSessionForm({
   navigateHome,
-  previousReferences,
+  previousSessionContext,
   routineId,
   selection,
   startedAt,
   routineName
 }: {
   navigateHome: (status?: 'completed' | 'ended-early') => void
-  previousReferences: Record<string, PreviousExerciseReference>
+  previousSessionContext: PreviousSessionContext
   routineId: string
   selection: NonNullable<ReturnType<typeof getRoutineDaySelection>>
   startedAt: string
@@ -81,9 +82,11 @@ function WorkoutSessionForm({
     selection.day.exercises.map((exercise) => ({
       exerciseId: exercise.id,
       exerciseName: exercise.name,
+      notes: '',
       sets: Array.from({ length: exercise.targetSets }, () => ({ reps: '', weightKg: '', actualRir: '' }))
     }))
   )
+  const [sessionNote, setSessionNote] = useState('')
   const [isSaving, setIsSaving] = useState<'completed' | 'ended-early' | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [elapsedLabel, setElapsedLabel] = useState(() => formatElapsed(startedAt, new Date().toISOString()))
@@ -125,6 +128,7 @@ function WorkoutSessionForm({
         dayId: selection.day.id,
         startedAt,
         status,
+        notes: sessionNote,
         exercises: exerciseDrafts
       })
 
@@ -154,9 +158,32 @@ function WorkoutSessionForm({
           <strong>{selection.day.label}</strong>
         </div>
         <div className="track-workout-hero__field track-workout-hero__field--muted">
-          <span>Add description or note</span>
+          <span>Referencia</span>
           <strong>{getWorkoutDayLabel(selection)}</strong>
         </div>
+
+        {previousSessionContext.sessionNote ? (
+          <div className="track-note-callout" aria-label="Última nota de la sesión">
+            <span className="track-note-callout__label">Última nota de la sesión</span>
+            <p>{previousSessionContext.sessionNote}</p>
+          </div>
+        ) : null}
+
+        <Field
+          className="track-note-field"
+          hint="Visible en el historial y cuando vuelvas a entrenar este mismo día."
+          htmlFor="session-quick-note"
+          label="Nota rápida de la sesión"
+        >
+          <FieldTextarea
+            id="session-quick-note"
+            maxLength={280}
+            placeholder="Ej: me faltó aire al final, bajar descanso o repetir este día más fresco."
+            rows={3}
+            value={sessionNote}
+            onChange={(event) => setSessionNote(event.target.value)}
+          />
+        </Field>
 
         <div className="track-workout-hero__stats">
           <SessionStat value={`${workingSetCount}`} label="Working Sets" />
@@ -172,7 +199,7 @@ function WorkoutSessionForm({
       <div className="track-workout-stack">
         {selection.day.exercises.map((exercise, exerciseIndex) => {
           const exerciseDraft = exerciseDrafts[exerciseIndex]
-          const reference = previousReferences[exercise.id] ?? previousReferences[normalizeExerciseName(exercise.name)]
+          const reference = previousSessionContext.exercises[exercise.id] ?? previousSessionContext.exercises[normalizeExerciseName(exercise.name)]
 
           return (
             <Card as="article" className="track-exercise-card" key={exercise.id}>
@@ -193,6 +220,13 @@ function WorkoutSessionForm({
                 <span>Reps</span>
                 <span>RIR</span>
               </div>
+
+              {reference?.notes ? (
+                <div className="track-note-callout track-note-callout--exercise" aria-label={`Última nota de ${exercise.name}`}>
+                  <span className="track-note-callout__label">Última nota</span>
+                  <p>{reference.notes}</p>
+                </div>
+              ) : null}
 
               <div className="track-set-stack">
                 {exerciseDraft.sets.map((set, setIndex) => (
@@ -232,6 +266,17 @@ function WorkoutSessionForm({
                   </div>
                 ))}
               </div>
+
+              <Field className="track-note-field track-note-field--exercise" htmlFor={`exercise-note-${exercise.id}`} label="Nota rápida del ejercicio">
+                <FieldTextarea
+                  id={`exercise-note-${exercise.id}`}
+                  maxLength={220}
+                  placeholder="Ej: cuidar la técnica, subir 2.5 kg o mantener el mismo rango."
+                  rows={2}
+                  value={exerciseDraft.notes ?? ''}
+                  onChange={(event) => updateExerciseNotes(setExerciseDrafts, exerciseIndex, event.target.value)}
+                />
+              </Field>
             </Card>
           )
         })}
@@ -279,6 +324,19 @@ function formatCompactReference(reference: PreviousExerciseReference | undefined
   const reps = setReference.reps !== null ? `${setReference.reps}` : '—'
 
   return `(${weight}) × ${reps}`
+}
+
+function updateExerciseNotes(setExerciseDrafts: Dispatch<SetStateAction<ExerciseDraftState[]>>, exerciseIndex: number, value: string) {
+  setExerciseDrafts((current) =>
+    current.map((exercise, currentExerciseIndex) =>
+      currentExerciseIndex === exerciseIndex
+        ? {
+            ...exercise,
+            notes: value
+          }
+        : exercise
+    )
+  )
 }
 
 function updateExerciseDraft(

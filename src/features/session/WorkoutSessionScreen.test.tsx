@@ -36,6 +36,7 @@ describe('WorkoutSessionScreen', () => {
       weekIndex: 0,
       weekLabel: 'Semana 1',
       status: 'completed',
+      notes: 'volver más fresco para no perder postura',
       startedAt: '2026-05-04T10:00:00.000Z',
       endedAt: '2026-05-04T10:40:00.000Z',
       exercises: [
@@ -45,6 +46,7 @@ describe('WorkoutSessionScreen', () => {
           exerciseName: 'Remo con barra',
           targetSets: 2,
           targetRir: 1,
+          notes: 'mantener pecho arriba y no tirar con bíceps',
           sets: [{ id: 'set-1', setNumber: 1, reps: 8, weightKg: 70, actualRir: 1 }]
         }
       ]
@@ -54,6 +56,8 @@ describe('WorkoutSessionScreen', () => {
 
     expect(await screen.findByText(/\(70 kg\) × 8/i)).toBeInTheDocument()
     expect(screen.getByText(/^—$/)).toBeInTheDocument()
+    expect(screen.getByText(/volver más fresco para no perder postura/i)).toBeInTheDocument()
+    expect(screen.getByText(/mantener pecho arriba y no tirar con bíceps/i)).toBeInTheDocument()
   })
 
   it('shows visible saving feedback and returns with a success flag', async () => {
@@ -70,7 +74,16 @@ describe('WorkoutSessionScreen', () => {
     renderSessionScreen()
 
     await screen.findByRole('heading', { name: 'Pull' })
+    await user.type(screen.getByLabelText(/nota rápida de la sesión/i), 'sentí poca estabilidad al final')
+    await user.type(screen.getByLabelText(/nota rápida del ejercicio/i), 'subir 2.5 kg si mantengo forma')
     await user.click(screen.getByRole('button', { name: /finalizar sesión/i }))
+
+    expect(sessionRepository.saveWorkoutSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notes: 'sentí poca estabilidad al final',
+        exercises: [expect.objectContaining({ notes: 'subir 2.5 kg si mantengo forma' })]
+      })
+    )
 
     expect(screen.getByRole('status')).toHaveTextContent(/guardando sesión finalizada/i)
     expect(screen.getByRole('button', { name: /guardando finalización/i })).toBeDisabled()
@@ -84,6 +97,7 @@ describe('WorkoutSessionScreen', () => {
       weekIndex: 0,
       weekLabel: 'Semana 1',
       status: 'completed',
+      notes: 'sentí poca estabilidad al final',
       startedAt: '2026-05-05T10:00:00.000Z',
       endedAt: '2026-05-05T10:30:00.000Z',
       exercises: []

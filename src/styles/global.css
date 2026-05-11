@@ -2281,6 +2281,46 @@ body {
   font-weight: 500;
 }
 
+.track-note-callout,
+.history-note-card {
+  display: grid;
+  gap: 6px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.track-note-callout__label,
+.history-note-card__label {
+  color: var(--design-accent);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.track-note-callout p,
+.history-note-card p {
+  margin: 0;
+  color: var(--design-text-muted);
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+.track-note-field {
+  gap: 8px;
+}
+
+.track-note-field .text-input {
+  min-height: 88px;
+  resize: vertical;
+}
+
+.track-note-field--exercise .text-input {
+  min-height: 72px;
+}
+
 .track-set-stack {
   display: grid;
   gap: 10px;
@@ -2609,6 +2649,10 @@ body {
   display: grid;
   gap: 14px;
   padding: 16px;
+}
+
+.history-note-card--exercise {
+  margin-top: -2px;
 }
 
 .history-set-stack--detail {

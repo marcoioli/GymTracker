@@ -126,6 +126,13 @@ export function HistorySessionDetailPage() {
 
         <p className="history-detail-note">Este detalle sale del snapshot guardado en el momento real del entrenamiento. Si la rutina cambió después, acá igual ves lo que pasó ese día.</p>
 
+        {session.notes ? (
+          <div className="history-note-card" aria-label="Nota guardada de la sesión">
+            <span className="history-note-card__label">Nota de la sesión</span>
+            <p>{session.notes}</p>
+          </div>
+        ) : null}
+
         <div className="history-detail-screen__section-heading">
           <h4>Exercises</h4>
           <span>{getSessionSetCount(session)} sets</span>
@@ -152,6 +159,13 @@ export function HistorySessionDetailPage() {
                   </div>
                   <strong className="history-volume-chip">{formatVolume(exercise.sets)}</strong>
                 </div>
+
+                {exercise.notes ? (
+                  <div className="history-note-card history-note-card--exercise" aria-label={`Nota guardada de ${exercise.exerciseName}`}>
+                    <span className="history-note-card__label">Nota del ejercicio</span>
+                    <p>{exercise.notes}</p>
+                  </div>
+                ) : null}
 
                 <div className="history-set-stack history-set-stack--detail">
                   {exercise.sets.map((set) => {

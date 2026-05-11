@@ -44,10 +44,12 @@ describe('HistoryPage', () => {
       startedAt: '2026-05-05T10:00:00.000Z',
       endedAt: '2026-05-05T10:40:00.000Z',
       status: 'completed',
+      notes: 'mantener descanso corto porque el segundo set salió mejor',
       exercises: [
         {
           exerciseId: 'exercise-1',
           exerciseName: 'Press banca',
+          notes: 'seguir con pausa en el pecho antes de subir carga',
           sets: [
             { reps: '8', weightKg: '80', actualRir: '2' },
             { reps: '8', weightKg: '82.5', actualRir: '1' }
@@ -105,6 +107,8 @@ describe('HistoryPage', () => {
     expect(screen.getByRole('heading', { name: /push pesado/i, level: 2 })).toBeInTheDocument()
     expect(screen.getAllByText(/semana base · upper a/i).length).toBeGreaterThan(0)
     expect(screen.getByText(/1300 kg volumen/i)).toBeInTheDocument()
+    expect(screen.getByText(/mantener descanso corto porque el segundo set salió mejor/i)).toBeInTheDocument()
+    expect(screen.getByText(/seguir con pausa en el pecho antes de subir carga/i)).toBeInTheDocument()
     expect(screen.queryByText(/upper b/i)).not.toBeInTheDocument()
     expect(screen.queryByText(/press inclinado/i)).not.toBeInTheDocument()
   })
