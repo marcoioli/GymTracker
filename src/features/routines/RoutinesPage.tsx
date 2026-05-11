@@ -315,17 +315,10 @@ export function RoutinesPage() {
                                 return currentWeek
                               }
 
-                              if (nextValue.trim() === '') {
-                                return { ...currentWeek, days: [] }
-                              }
+                              const preserveExistingDays = Boolean(formState.id)
+                              const nextDays = resolveWeekDaysFromCountInput(currentWeek.days, nextValue, preserveExistingDays)
 
-                              const dayCount = Number(nextValue)
-
-                              if (!Number.isInteger(dayCount) || dayCount < 1) {
-                                return currentWeek
-                              }
-
-                              return { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) }
+                              return nextDays === currentWeek.days ? currentWeek : { ...currentWeek, days: nextDays }
                             })
                           }))
                         }}
@@ -428,7 +421,6 @@ export function RoutinesPage() {
                                   <span>Repeticiones</span>
                                   <span>RIR</span>
                                   <span />
-                                  <span />
                                 </div>
 
                                 {(exercise.setReferences ?? []).map((setReference, setIndex) => (
@@ -467,20 +459,6 @@ export function RoutinesPage() {
                                         }))
                                       }}
                                     />
-
-                                    <button
-                                      aria-label={`Repetir serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
-                                      className="routine-series-planner__duplicate"
-                                      type="button"
-                                      onClick={() => {
-                                        updateFormState(setFormState, (current) => ({
-                                          ...current,
-                                          weeks: duplicateExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id)
-                                        }))
-                                      }}
-                                    >
-                                      +
-                                    </button>
 
                                     <button
                                       aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
@@ -677,33 +655,16 @@ function updateExerciseSetReference(
 }
 
 function addExerciseSetReference(weeks: RoutineWeek[], weekId: string, dayId: string, exerciseId: string): RoutineWeek[] {
-  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => [
-    ...references,
-    createExerciseSetReference({ rirTarget: references.at(-1)?.rirTarget ?? '' })
-  ])
-}
-
-function duplicateExerciseSetReference(
-  weeks: RoutineWeek[],
-  weekId: string,
-  dayId: string,
-  exerciseId: string,
-  setReferenceId: string
-): RoutineWeek[] {
   return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => {
-    const duplicateIndex = references.findIndex((reference) => reference.id === setReferenceId)
+    const previousReference = references.at(-1)
 
-    if (duplicateIndex === -1) {
-      return references
-    }
-
-    const source = references[duplicateIndex]
-    const clonedReference = createExerciseSetReference({
-      repsTarget: source.repsTarget,
-      rirTarget: source.rirTarget
-    })
-
-    return [...references.slice(0, duplicateIndex + 1), clonedReference, ...references.slice(duplicateIndex + 1)]
+    return [
+      ...references,
+      createExerciseSetReference({
+        repsTarget: previousReference?.repsTarget ?? '',
+        rirTarget: previousReference?.rirTarget ?? ''
+      })
+    ]
   })
 }
 
@@ -722,6 +683,28 @@ function removeExerciseSetReference(
     const nextReferences = references.filter((reference) => reference.id !== setReferenceId)
     return nextReferences.length > 0 ? nextReferences : references
   })
+}
+
+function resolveWeekDaysFromCountInput(
+  currentDays: RoutineDay[],
+  nextValue: string,
+  preserveExistingDays: boolean
+): RoutineDay[] {
+  if (nextValue.trim() === '') {
+    return preserveExistingDays && currentDays.length > 0 ? currentDays : []
+  }
+
+  const dayCount = Number(nextValue)
+
+  if (!Number.isInteger(dayCount) || dayCount < 1) {
+    return currentDays
+  }
+
+  if (preserveExistingDays && dayCount < currentDays.length) {
+    return currentDays
+  }
+
+  return resizeDays(currentDays, dayCount)
 }
 
 function updateExerciseReferenceCollection(
