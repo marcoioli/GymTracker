@@ -16,6 +16,7 @@ import {
 import { normalizeExerciseName } from '../../domain/routines'
 import { db } from '../../db/database'
 import { Card, EmptyState, Field, FieldSelect, PageSection } from '../../shared/ui'
+import { getSessionDayKey, getSessionDayLabel, type SessionFilterOption } from '../history/historyShared'
 
 type ExerciseOption = {
   key: string
@@ -26,13 +27,36 @@ export function AnalyticsPage() {
   const routines = useLiveQuery(() => db.routines.orderBy('updatedAt').reverse().toArray(), [], [])
   const sessions = useLiveQuery(() => db.sessions.orderBy('endedAt').reverse().toArray(), [], [])
   const [selectedRoutineId, setSelectedRoutineId] = useState('all')
+  const [selectedDayKey, setSelectedDayKey] = useState('all')
   const [selectedExerciseKey, setSelectedExerciseKey] = useState('')
 
   const effectiveSelectedRoutineId = selectedRoutineId === 'all' || routines.some((routine) => routine.id === selectedRoutineId) ? selectedRoutineId : 'all'
 
-  const filteredSessions = useMemo(
+  const filteredByRoutine = useMemo(
     () => (effectiveSelectedRoutineId === 'all' ? sessions : sessions.filter((session) => session.routineId === effectiveSelectedRoutineId)),
     [effectiveSelectedRoutineId, sessions]
+  )
+
+  const dayOptions = useMemo<SessionFilterOption[]>(() => {
+    const labels = new Map<string, string>()
+
+    filteredByRoutine.forEach((session) => {
+      labels.set(getSessionDayKey(session), getSessionDayLabel(session))
+    })
+
+    return Array.from(labels.entries())
+      .sort((left, right) => left[1].localeCompare(right[1]))
+      .map(([key, label]) => ({ key, label }))
+  }, [filteredByRoutine])
+
+  const effectiveSelectedDayKey = selectedDayKey === 'all' || dayOptions.some((option) => option.key === selectedDayKey) ? selectedDayKey : 'all'
+
+  const filteredSessions = useMemo(
+    () =>
+      effectiveSelectedDayKey === 'all'
+        ? filteredByRoutine
+        : filteredByRoutine.filter((session) => getSessionDayKey(session) === effectiveSelectedDayKey),
+    [effectiveSelectedDayKey, filteredByRoutine]
   )
 
   const exerciseOptions = useMemo<ExerciseOption[]>(() => {
@@ -93,6 +117,17 @@ export function AnalyticsPage() {
                   {routines.map((routine) => (
                     <option key={routine.id} value={routine.id}>
                       {routine.name}
+                    </option>
+                  ))}
+                </FieldSelect>
+              </Field>
+
+              <Field label="Día guardado">
+                <FieldSelect disabled={dayOptions.length === 0} value={effectiveSelectedDayKey} onChange={(event) => setSelectedDayKey(event.target.value)}>
+                  <option value="all">Todos</option>
+                  {dayOptions.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
                     </option>
                   ))}
                 </FieldSelect>
