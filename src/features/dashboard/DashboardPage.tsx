@@ -71,7 +71,7 @@ export function DashboardPage() {
         ) : null}
 
         <div className="tracker-section-heading">
-          <h3>Workout History</h3>
+          <h3>Historial de entrenamientos</h3>
           {sessions.length > 0 ? (
             <Button size="compact" variant="ghost" onClick={() => navigate('/history')}>
               Ver todo

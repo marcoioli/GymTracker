@@ -126,14 +126,14 @@ function RootLayout() {
               Tracker
             </NavLink>
             <NavLink className={({ isActive }) => `workouts-segmented-nav__link${isActive ? ' active' : ''}`} to="/routines">
-              Routines
+              Rutinas
             </NavLink>
           </nav>
 
           {!isTrackerRoute ? (
             <button aria-label={fabCopy.label} className="workouts-primary-cta" type="button" onClick={handleQuickStart}>
               <span aria-hidden="true">＋</span>
-              <span>TRACK NEW WORKOUT</span>
+              <span>Iniciar nuevo entrenamiento</span>
             </button>
           ) : null}
         </header>

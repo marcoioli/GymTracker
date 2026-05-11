@@ -97,7 +97,7 @@ export function HistoryPage() {
     <>
       <PageSection
         headerHidden
-        title="Workout History"
+        title="Historial de entrenamientos"
         titleId="history-title"
       >
         {sessions.length === 0 ? (

@@ -119,8 +119,8 @@ export function RoutinesPage() {
     <>
       <PageSection
         description="Tus plantillas activas, pausadas y listas para entrenar."
-        eyebrow="Routines"
-        title="Routines"
+        eyebrow="Rutinas"
+        title="Rutinas"
         titleId="routines-title"
         actions={
           <Button size="compact" variant="secondary" onClick={openCreateRoutineForm}>
