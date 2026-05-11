@@ -1233,6 +1233,74 @@ textarea {
   gap: clamp(6px, 2vw, 8px);
 }
 
+.analytics-set-chart-card,
+.analytics-set-chart {
+  display: grid;
+  gap: 12px;
+}
+
+.analytics-set-chart__toggles {
+  margin-top: 12px;
+}
+
+.analytics-set-toggle {
+  white-space: nowrap;
+}
+
+.analytics-set-chart__svg {
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.analytics-set-chart__axis,
+.analytics-set-chart__tick,
+.analytics-set-chart__grid {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.analytics-set-chart__axis {
+  stroke: rgba(255, 255, 255, 0.18);
+  stroke-width: 1.5;
+}
+
+.analytics-set-chart__tick,
+.analytics-set-chart__grid {
+  stroke: rgba(255, 255, 255, 0.1);
+  stroke-width: 1;
+}
+
+.analytics-set-chart__grid {
+  stroke-dasharray: 4 6;
+}
+
+.analytics-set-chart__line {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.analytics-set-chart__point {
+  stroke: rgba(12, 10, 9, 0.86);
+  stroke-width: 2;
+}
+
+.analytics-set-chart__axis-label {
+  fill: var(--color-text-muted);
+  font-size: 0.64rem;
+}
+
+.analytics-set-chart__axis-label--subtle {
+  font-size: 0.58rem;
+}
+
+.analytics-set-chart__summary {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
 .bottom-nav {
   position: fixed;
   left: max(12px, calc(8px + env(safe-area-inset-left)));
@@ -2742,6 +2810,19 @@ body {
 :root[data-theme='light'] .routine-card--premium.ui-card--default:hover {
   background: var(--light-accent-wash);
   border-color: rgba(207, 100, 22, 0.22);
+}
+
+:root[data-theme='light'] .analytics-set-chart__axis {
+  stroke: rgba(111, 89, 70, 0.18);
+}
+
+:root[data-theme='light'] .analytics-set-chart__tick,
+:root[data-theme='light'] .analytics-set-chart__grid {
+  stroke: rgba(111, 89, 70, 0.12);
+}
+
+:root[data-theme='light'] .analytics-set-chart__point {
+  stroke: rgba(255, 251, 247, 0.96);
 }
 
 :root[data-theme='light'] .tracker-week-overview__day,
