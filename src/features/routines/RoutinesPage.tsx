@@ -38,7 +38,7 @@ const INITIAL_FORM_STATE = (): RoutineFormState => ({
   name: '',
   status: 'paused',
   progress: createRoutineProgress(),
-  weeks: [createRoutineWeek(0)]
+  weeks: [createRoutineWeek(0, 0)]
 })
 
 export function RoutinesPage() {
@@ -302,21 +302,32 @@ export function RoutinesPage() {
 
                     <Field compact label="Días">
                       <FieldInput
-                        max={7}
                         min={1}
                         type="number"
-                        value={week.days.length}
+                        value={week.days.length === 0 ? '' : String(week.days.length)}
                         onChange={(event) => {
-                          const dayCount = Number(event.target.value)
+                          const nextValue = event.target.value
 
-                          if (Number.isInteger(dayCount) && dayCount >= 1 && dayCount <= 7) {
-                            updateFormState(setFormState, (current) => ({
-                              ...current,
-                              weeks: current.weeks.map((currentWeek) =>
-                                currentWeek.id === week.id ? { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) } : currentWeek
-                              )
-                            }))
-                          }
+                          updateFormState(setFormState, (current) => ({
+                            ...current,
+                            weeks: current.weeks.map((currentWeek) => {
+                              if (currentWeek.id !== week.id) {
+                                return currentWeek
+                              }
+
+                              if (nextValue.trim() === '') {
+                                return { ...currentWeek, days: [] }
+                              }
+
+                              const dayCount = Number(nextValue)
+
+                              if (!Number.isInteger(dayCount) || dayCount < 1) {
+                                return currentWeek
+                              }
+
+                              return { ...currentWeek, days: resizeDays(currentWeek.days, dayCount) }
+                            })
+                          }))
                         }}
                       />
                     </Field>
@@ -589,7 +600,9 @@ function resizeWeeks(weeks: RoutineWeek[], weekCount: number): RoutineWeek[] {
     return weeks.slice(0, weekCount)
   }
 
-  return [...weeks, ...Array.from({ length: weekCount - weeks.length }, (_, index) => createRoutineWeek(weeks.length + index))]
+  const defaultDayCount = weeks.at(-1)?.days.length ?? 0
+
+  return [...weeks, ...Array.from({ length: weekCount - weeks.length }, (_, index) => createRoutineWeek(weeks.length + index, defaultDayCount))]
 }
 
 function resizeDays(days: RoutineDay[], dayCount: number): RoutineDay[] {
