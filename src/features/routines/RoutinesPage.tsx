@@ -417,6 +417,7 @@ export function RoutinesPage() {
                                   <span>Repeticiones</span>
                                   <span>RIR</span>
                                   <span />
+                                  <span />
                                 </div>
 
                                 {(exercise.setReferences ?? []).map((setReference, setIndex) => (
@@ -455,6 +456,20 @@ export function RoutinesPage() {
                                         }))
                                       }}
                                     />
+
+                                    <button
+                                      aria-label={`Repetir serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
+                                      className="routine-series-planner__duplicate"
+                                      type="button"
+                                      onClick={() => {
+                                        updateFormState(setFormState, (current) => ({
+                                          ...current,
+                                          weeks: duplicateExerciseSetReference(current.weeks, week.id, day.id, exercise.id, setReference.id)
+                                        }))
+                                      }}
+                                    >
+                                      +
+                                    </button>
 
                                     <button
                                       aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
@@ -655,6 +670,30 @@ function addExerciseSetReference(weeks: RoutineWeek[], weekId: string, dayId: st
   ])
 }
 
+function duplicateExerciseSetReference(
+  weeks: RoutineWeek[],
+  weekId: string,
+  dayId: string,
+  exerciseId: string,
+  setReferenceId: string
+): RoutineWeek[] {
+  return updateExerciseReferenceCollection(weeks, weekId, dayId, exerciseId, (references) => {
+    const duplicateIndex = references.findIndex((reference) => reference.id === setReferenceId)
+
+    if (duplicateIndex === -1) {
+      return references
+    }
+
+    const source = references[duplicateIndex]
+    const clonedReference = createExerciseSetReference({
+      repsTarget: source.repsTarget,
+      rirTarget: source.rirTarget
+    })
+
+    return [...references.slice(0, duplicateIndex + 1), clonedReference, ...references.slice(duplicateIndex + 1)]
+  })
+}
+
 function removeExerciseSetReference(
   weeks: RoutineWeek[],
   weekId: string,
@@ -728,10 +767,10 @@ function createExercise(): RoutineExercise {
   return {
     id: crypto.randomUUID(),
     name: '',
-    targetSets: 3,
+    targetSets: 1,
     targetRir: null,
     muscle: DEFAULT_MUSCLE_GROUP,
-    setReferences: [createExerciseSetReference(), createExerciseSetReference(), createExerciseSetReference()]
+    setReferences: [createExerciseSetReference()]
   }
 }
 
