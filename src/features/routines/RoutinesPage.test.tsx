@@ -121,7 +121,7 @@ describe('RoutinesPage', () => {
     })
   }, 15000)
 
-  it('starts new exercises with one empty set and can repeat a filled series', async () => {
+  it('starts new exercises with one empty set and duplicates the previous series from agregar serie', async () => {
     const user = userEvent.setup()
 
     render(
@@ -136,11 +136,12 @@ describe('RoutinesPage', () => {
 
     expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(1)
     expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(1)
+    expect(screen.queryByRole('button', { name: /repetir serie/i })).not.toBeInTheDocument()
 
     fireEvent.change(screen.getByLabelText(/repeticiones objetivo serie 1/i), { target: { value: '6-8' } })
     fireEvent.change(screen.getByLabelText(/rir objetivo serie 1/i), { target: { value: '1' } })
 
-    await user.click(screen.getByRole('button', { name: /repetir serie 1 del ejercicio 1/i }))
+    await user.click(screen.getByRole('button', { name: /agregar serie/i }))
 
     expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(2)
     expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(2)
@@ -161,6 +162,56 @@ describe('RoutinesPage', () => {
 
     expect(screen.getByLabelText(/^días$/i)).toHaveValue(null)
     expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument()
+  })
+
+  it('preserves saved days when the day count field is cleared or reduced during edit', async () => {
+    const routineId = 'routine-preserve-days'
+
+    await db.routines.add({
+      id: routineId,
+      name: 'Rutina guardada',
+      status: 'paused',
+      weekCount: 1,
+      progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
+      createdAt: '2026-05-05T10:00:00.000Z',
+      updatedAt: '2026-05-05T10:00:00.000Z',
+      weeks: [
+        {
+          id: 'week-1',
+          label: 'Semana 1',
+          days: [
+            { id: 'day-1', label: 'Push', exercises: [] },
+            { id: 'day-2', label: 'Pull', exercises: [] }
+          ]
+        }
+      ]
+    })
+
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <RoutinesPage />
+      </MemoryRouter>
+    )
+
+    await user.click(await screen.findByRole('button', { name: /editar/i }))
+
+    const dayCountInput = screen.getByLabelText(/^días$/i)
+    fireEvent.change(dayCountInput, { target: { value: '' } })
+    expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(2)
+    expect(dayCountInput).toHaveValue(2)
+
+    fireEvent.change(dayCountInput, { target: { value: '1' } })
+    expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(2)
+    expect(dayCountInput).toHaveValue(2)
+
+    await user.click(screen.getByRole('button', { name: /guardar cambios/i }))
+
+    const savedRoutine = await db.routines.get(routineId)
+    expect(savedRoutine?.weeks[0]?.days).toHaveLength(2)
+    expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe('Push')
+    expect(savedRoutine?.weeks[0]?.days[1]?.label).toBe('Pull')
   })
 
   it('repeats the previous week while editing without mutating the source week', async () => {
