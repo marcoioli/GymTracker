@@ -131,6 +131,7 @@ describe('RoutinesPage', () => {
     )
 
     await user.click(screen.getByRole('button', { name: /nueva rutina/i }))
+    fireEvent.change(screen.getByLabelText(/^días$/i), { target: { value: '1' } })
     await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
 
     expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(1)
