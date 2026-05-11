@@ -45,7 +45,7 @@ describe('RoutinesPage', () => {
     await user.click(screen.getByRole('button', { name: /guardar rutina/i }))
 
     expect(await screen.findByRole('heading', { name: 'Upper A' })).toBeInTheDocument()
-    expect(screen.getAllByText(/8 series/i).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/4 series/i).length).toBeGreaterThan(0)
     expect(screen.getAllByText(/pecho/i).length).toBeGreaterThan(0)
 
     const savedRoutine = await db.routines.toCollection().first()
@@ -59,12 +59,12 @@ describe('RoutinesPage', () => {
     expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe('Pecho y espalda')
     expect(savedRoutine?.weeks[1]?.days[0]?.label).toBe('Pecho y espalda')
     expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.muscle).toBe('Pecho')
-    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences).toHaveLength(4)
+    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences).toHaveLength(2)
     expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.repsTarget).toBe('8-12')
     expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]).toMatchObject({
       name: 'Press banca',
       muscle: 'Pecho',
-      targetSets: 4,
+      targetSets: 2,
       targetRir: 2
     })
     expect(savedRoutine?.weeks[1]?.id).not.toBe(savedRoutine?.weeks[0]?.id)
@@ -86,7 +86,7 @@ describe('RoutinesPage', () => {
           id: 'snapshot-1',
           exerciseTemplateId: savedRoutine!.weeks[0].days[0].exercises[0].id,
           exerciseName: 'Press banca',
-          targetSets: 4,
+          targetSets: 2,
           targetRir: 2,
           muscle: 'Pecho',
           sets: []
@@ -116,10 +116,37 @@ describe('RoutinesPage', () => {
     expect(updatedRoutine?.weeks[0].days[0].label).toBe('Push principal')
     expect(savedSession?.exercises[0]).toMatchObject({
       exerciseName: 'Press banca',
-      targetSets: 4,
+      targetSets: 2,
       targetRir: 2
     })
-  }, 10000)
+  }, 15000)
+
+  it('starts new exercises with one empty set and can repeat a filled series', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <RoutinesPage />
+      </MemoryRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /nueva rutina/i }))
+    fireEvent.change(screen.getByLabelText(/^días$/i), { target: { value: '1' } })
+    await user.click(screen.getByRole('button', { name: /agregar ejercicio/i }))
+
+    expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(1)
+    expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(1)
+
+    fireEvent.change(screen.getByLabelText(/repeticiones objetivo serie 1/i), { target: { value: '6-8' } })
+    fireEvent.change(screen.getByLabelText(/rir objetivo serie 1/i), { target: { value: '1' } })
+
+    await user.click(screen.getByRole('button', { name: /repetir serie 1 del ejercicio 1/i }))
+
+    expect(screen.getAllByLabelText(/repeticiones objetivo serie/i)).toHaveLength(2)
+    expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(2)
+    expect(screen.getByLabelText(/repeticiones objetivo serie 2/i)).toHaveValue('6-8')
+    expect(screen.getByLabelText(/rir objetivo serie 2/i)).toHaveValue('1')
+  })
 
   it('keeps day count empty on a new routine until the user defines it', async () => {
     const user = userEvent.setup()

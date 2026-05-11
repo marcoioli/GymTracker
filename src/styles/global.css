@@ -2430,7 +2430,7 @@ body {
 .routine-series-planner__head,
 .routine-series-planner__row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 40px;
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 40px 40px;
   gap: 10px;
   align-items: center;
 }
@@ -2454,6 +2454,7 @@ body {
   font-weight: 700;
 }
 
+.routine-series-planner__duplicate,
 .routine-series-planner__remove {
   min-height: 42px;
   min-width: 42px;
@@ -2462,6 +2463,10 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.02);
   color: var(--design-text-muted);
+}
+
+.routine-series-planner__duplicate {
+  color: var(--design-accent);
 }
 
 .routine-series-planner__remove:disabled {
@@ -2504,6 +2509,7 @@ body {
 .tracker-week-overview__day:active,
 .routine-exercise-planner__add-set:active,
 .routine-exercise-planner__remove-exercise:active,
+.routine-series-planner__duplicate:active,
 .routine-series-planner__remove:active {
   transform: scale(0.98);
 }
@@ -2695,7 +2701,7 @@ body {
 
   .routine-series-planner__head,
   .routine-series-planner__row {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr) 34px;
+    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr) 34px 34px;
     gap: 8px;
   }
 
@@ -2790,6 +2796,7 @@ body {
 :root[data-theme='light'] .ghost-button,
 :root[data-theme='light'] .track-set-input,
 :root[data-theme='light'] .track-set-input--routine,
+:root[data-theme='light'] .routine-series-planner__duplicate,
 :root[data-theme='light'] .routine-series-planner__remove,
 :root[data-theme='light'] .bottom-nav,
 :root[data-theme='light'] .filter-chip,
