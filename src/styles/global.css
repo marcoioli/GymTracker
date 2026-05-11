@@ -888,22 +888,22 @@ textarea {
   inset: 0;
   z-index: 20;
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: center;
-  padding: clamp(16px, 5vw, 20px) clamp(12px, 4vw, 16px) clamp(24px, 8vw, 40px);
-  background: rgba(4, 8, 15, 0.76);
-  backdrop-filter: blur(12px);
+  padding: calc(72px + env(safe-area-inset-top)) clamp(12px, 4vw, 16px) clamp(24px, 8vw, 40px);
+  background: rgba(10, 12, 16, 0.32);
+  backdrop-filter: blur(6px);
 }
 
 .modal-sheet {
   width: min(100%, 528px);
-  max-height: calc(100dvh - clamp(40px, 12vw, 56px) - env(safe-area-inset-bottom));
+  max-height: calc(100dvh - 96px - env(safe-area-inset-bottom));
   overflow-y: auto;
   overscroll-behavior: contain;
   border-radius: clamp(22px, 7vw, 28px);
   padding: clamp(16px, 5vw, 20px);
-  border: 1px solid rgba(249, 115, 22, 0.18);
-  background: linear-gradient(180deg, rgba(19, 28, 43, 0.98), rgba(12, 19, 31, 0.98));
+  border: 1px solid var(--design-border);
+  background: var(--surface-card);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.45);
 }
 
@@ -959,14 +959,14 @@ textarea {
   display: block;
   padding: clamp(12px, 3.8vw, 14px);
   border-radius: clamp(16px, 5vw, 18px);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: rgba(8, 13, 23, 0.54);
+  border: 1px solid var(--design-border);
+  background: rgba(255, 255, 255, 0.03);
   transition: border-color 180ms ease, background-color 180ms ease, transform 180ms ease;
 }
 
 .day-option--selected {
   border-color: rgba(34, 197, 94, 0.55);
-  background: rgba(21, 48, 33, 0.9);
+  background: rgba(34, 197, 94, 0.12);
   transform: translateY(-1px);
 }
 
@@ -1053,9 +1053,10 @@ textarea {
   bottom: clamp(12px, 4vw, 16px);
   padding: clamp(12px, 3.8vw, 14px);
   border-radius: clamp(18px, 6vw, 22px);
-  background: rgba(7, 12, 22, 0.94);
-  border: 1px solid rgba(148, 163, 184, 0.14);
+  background: var(--surface-card);
+  border: 1px solid var(--design-border);
   backdrop-filter: blur(14px);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.18);
 }
 
 .session-actions .ghost-button,
@@ -2767,14 +2768,45 @@ body {
   border-color: var(--light-border-soft);
 }
 
+:root[data-theme='light'] .modal-sheet {
+  background: var(--light-panel-strong);
+  border-color: var(--light-border-soft);
+  box-shadow: 0 22px 44px rgba(120, 85, 53, 0.16);
+}
+
+:root[data-theme='light'] .modal-backdrop {
+  background: rgba(90, 68, 48, 0.12);
+  backdrop-filter: blur(4px);
+}
+
+:root[data-theme='light'] .session-actions {
+  background: var(--light-panel-strong);
+  border-color: var(--light-border-soft);
+  box-shadow: 0 16px 30px rgba(120, 85, 53, 0.12);
+}
+
+:root[data-theme='light'] .day-option {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: var(--light-border-soft);
+}
+
+:root[data-theme='light'] .day-option--selected {
+  background: rgba(34, 197, 94, 0.1);
+}
+
 :root[data-theme='light'] .sidebar__copy,
-:root[data-theme='light'] .empty-note,
 :root[data-theme='light'] .history-empty-state,
 :root[data-theme='light'] .routine-exercise-planner,
 :root[data-theme='light'] .routine-series-planner {
   background: var(--light-glass);
   border-color: var(--light-border-soft);
   box-shadow: 0 14px 32px rgba(120, 85, 53, 0.06);
+}
+
+:root[data-theme='light'] .empty-note {
+  background: transparent;
+  border: 0;
+  box-shadow: none;
 }
 
 :root[data-theme='light'] .ui-card,
