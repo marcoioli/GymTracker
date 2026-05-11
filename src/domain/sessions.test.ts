@@ -1,6 +1,12 @@
-import { buildSanitizedSessionSetRecords, normalizeSessionExerciseSnapshot, parseSessionNumericInput } from './sessions'
+import { buildSanitizedSessionSetRecords, normalizeSessionExerciseSnapshot, normalizeSessionNote, parseSessionNumericInput } from './sessions'
 
 describe('session domain guards', () => {
+  it('normalizes quick notes safely', () => {
+    expect(normalizeSessionNote('  banca sólida\r\nsubí 2.5 kg  ')).toBe('banca sólida\nsubí 2.5 kg')
+    expect(normalizeSessionNote('   ')).toBeUndefined()
+    expect(normalizeSessionNote(null)).toBeUndefined()
+  })
+
   it('normalizes decimal commas and garbage input safely', () => {
     expect(parseSessionNumericInput('82,5')).toBe(82.5)
     expect(parseSessionNumericInput('abc')).toBeNull()
@@ -26,9 +32,10 @@ describe('session domain guards', () => {
         targetSets: 3,
         targetRir: 2,
         muscle: 'Pecho',
+        notes: '  pausa más prolija  ',
         sets: []
-      }).muscle
-    ).toBe('Pecho')
+      })
+    ).toMatchObject({ muscle: 'Pecho', notes: 'pausa más prolija' })
 
     expect(
       normalizeSessionExerciseSnapshot({

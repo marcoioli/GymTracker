@@ -11,6 +11,7 @@ import {
 } from '../../domain/routines'
 import {
   buildSanitizedSessionSetRecords,
+  normalizeSessionNote,
   normalizeWorkoutSessionRecord,
   type SessionExerciseInputDraft,
   type SessionStatus,
@@ -28,7 +29,13 @@ export type PreviousSetReference = {
 export type PreviousExerciseReference = {
   exerciseId: string
   exerciseName: string
+  notes?: string
   sets: PreviousSetReference[]
+}
+
+export type PreviousSessionContext = {
+  sessionNote?: string
+  exercises: Record<string, PreviousExerciseReference>
 }
 
 export type SaveWorkoutSessionDraft = {
@@ -38,6 +45,7 @@ export type SaveWorkoutSessionDraft = {
   startedAt: string
   endedAt?: string
   status: SessionStatus
+  notes?: string
   exercises: SessionExerciseInput[]
 }
 
@@ -55,10 +63,7 @@ export async function getSuggestedWorkoutDay() {
   }
 }
 
-export async function getPreviousSessionReferences(
-  routineId: string,
-  dayId: string
-): Promise<Record<string, PreviousExerciseReference>> {
+export async function getPreviousSessionReferences(routineId: string, dayId: string): Promise<PreviousSessionContext> {
   const latestSession = await db.sessions
     .where('[routineId+dayId]')
     .equals([routineId, dayId])
@@ -67,32 +72,38 @@ export async function getPreviousSessionReferences(
     .then((sessions) => sessions.at(-1))
 
   if (!latestSession) {
-    return {}
+    return { exercises: {} }
   }
 
-  return normalizeWorkoutSessionRecord(latestSession).exercises.reduce<Record<string, PreviousExerciseReference>>((references, exercise) => {
-    if (!exercise.exerciseName.trim() && !exercise.exerciseTemplateId) {
+  const normalizedSession = normalizeWorkoutSessionRecord(latestSession)
+
+  return {
+    sessionNote: normalizedSession.notes,
+    exercises: normalizedSession.exercises.reduce<Record<string, PreviousExerciseReference>>((references, exercise) => {
+      if (!exercise.exerciseName.trim() && !exercise.exerciseTemplateId) {
+        return references
+      }
+
+      const key = exercise.exerciseTemplateId ?? normalizeExerciseName(exercise.exerciseName)
+
+      if (!key) {
+        return references
+      }
+
+      references[key] = {
+        exerciseId: key,
+        exerciseName: exercise.exerciseName,
+        notes: exercise.notes,
+        sets: exercise.sets.map((set) => ({
+          reps: set.reps,
+          weightKg: set.weightKg,
+          actualRir: set.actualRir
+        }))
+      }
+
       return references
-    }
-
-    const key = exercise.exerciseTemplateId ?? normalizeExerciseName(exercise.exerciseName)
-
-    if (!key) {
-      return references
-    }
-
-    references[key] = {
-      exerciseId: key,
-      exerciseName: exercise.exerciseName,
-      sets: exercise.sets.map((set) => ({
-        reps: set.reps,
-        weightKg: set.weightKg,
-        actualRir: set.actualRir
-      }))
-    }
-
-    return references
-  }, {})
+    }, {})
+  }
 }
 
 export async function saveWorkoutSession(draft: SaveWorkoutSessionDraft): Promise<WorkoutSession> {
@@ -121,6 +132,7 @@ export async function saveWorkoutSession(draft: SaveWorkoutSessionDraft): Promis
       weekLabel: selection.weekLabel,
       dayLabel: selection.day.label,
       status: draft.status,
+      notes: normalizeSessionNote(draft.notes),
       startedAt: draft.startedAt,
       endedAt,
       exercises: selection.day.exercises.map((exercise, exerciseIndex) => {
@@ -133,6 +145,7 @@ export async function saveWorkoutSession(draft: SaveWorkoutSessionDraft): Promis
           targetSets: exercise.targetSets,
           targetRir: exercise.targetRir,
           muscle: exercise.muscle,
+          notes: normalizeSessionNote(exerciseInput?.notes),
           sets: buildSanitizedSessionSetRecords(exercise.targetSets, exerciseInput?.sets ?? []).map((set) => ({
             id: crypto.randomUUID(),
             ...set
