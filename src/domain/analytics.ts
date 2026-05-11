@@ -42,6 +42,27 @@ export type ExerciseMilestoneSummary = {
   latestMilestoneAt: string | null
 }
 
+export type ExerciseSetProgressPoint = {
+  sessionId: string
+  performedAt: string
+  weightKg: number | null
+}
+
+export type ExerciseSetProgressSeries = {
+  exerciseName: string
+  setNumber: number
+  points: ExerciseSetProgressPoint[]
+  loggedPointCount: number
+}
+
+export type ExerciseSetProgressChart = {
+  exerciseName: string
+  timeline: Array<Pick<ExerciseSetProgressPoint, 'sessionId' | 'performedAt'>>
+  series: ExerciseSetProgressSeries[]
+  minWeightKg: number | null
+  maxWeightKg: number | null
+}
+
 export type SessionExerciseMilestone = {
   bestWeightKg: number | null
   bestSetVolume: number | null
@@ -138,6 +159,52 @@ export function getExerciseMilestoneSummary(
   return buildExerciseMilestoneSummary(getExerciseOccurrences(sessions, exerciseKey))
 }
 
+export function getExerciseSetProgressChart(
+  sessions: WorkoutSession[],
+  exerciseKey: string
+): ExerciseSetProgressChart | null {
+  const occurrences = getExerciseOccurrences(sessions, exerciseKey)
+
+  if (occurrences.length === 0) {
+    return null
+  }
+
+  const timeline = occurrences.map((occurrence) => ({
+    sessionId: occurrence.sessionId,
+    performedAt: occurrence.performedAt
+  }))
+  const setNumbers = Array.from(
+    new Set(
+      occurrences.flatMap((occurrence) => occurrence.setWeights.map((set) => set.setNumber))
+    )
+  ).sort((left, right) => left - right)
+  const series = setNumbers
+    .map<ExerciseSetProgressSeries>((setNumber) => {
+      const points = occurrences.map<ExerciseSetProgressPoint>((occurrence) => ({
+        sessionId: occurrence.sessionId,
+        performedAt: occurrence.performedAt,
+        weightKg: occurrence.setWeights.find((set) => set.setNumber === setNumber)?.weightKg ?? null
+      }))
+
+      return {
+        exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
+        setNumber,
+        points,
+        loggedPointCount: points.filter((point) => point.weightKg !== null).length
+      }
+    })
+    .filter((entry) => entry.loggedPointCount > 0)
+  const loggedWeights = series.flatMap((entry) => entry.points.map((point) => point.weightKg).filter((value): value is number => value !== null))
+
+  return {
+    exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
+    timeline,
+    series,
+    minWeightKg: loggedWeights.length > 0 ? Math.min(...loggedWeights) : null,
+    maxWeightKg: loggedWeights.length > 0 ? Math.max(...loggedWeights) : null
+  }
+}
+
 export function getSessionExerciseMilestones(
   sessions: WorkoutSession[],
   targetSession: WorkoutSession
@@ -219,6 +286,7 @@ type ExerciseOccurrence = {
   exerciseName: string
   sessionId: string
   performedAt: string
+  setWeights: Array<{ setNumber: number; weightKg: number | null }>
   bestWeightKg: number | null
   bestSetVolume: number | null
   totalReps: number
@@ -263,6 +331,10 @@ function getExerciseOccurrences(sessions: WorkoutSession[], exerciseKey: string)
             exerciseName: exercise.exerciseName,
             sessionId: session.id,
             performedAt: session.endedAt,
+            setWeights: exercise.sets.map((set) => ({
+              setNumber: set.setNumber,
+              weightKg: set.weightKg
+            })),
             bestWeightKg,
             bestSetVolume,
             totalReps,

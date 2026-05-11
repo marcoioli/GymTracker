@@ -6,8 +6,11 @@ import {
   getCurrentWeekFrequencySummary,
   getExerciseMilestoneSummary,
   getExerciseProgressPoints,
+  getExerciseSetProgressChart,
   getRoutineAdherenceSummary,
   getWeeklyVolumeSummaries,
+  type ExerciseSetProgressChart,
+  type ExerciseSetProgressSeries,
   type ExerciseProgressPoint
 } from '../../domain/analytics'
 import { normalizeExerciseName } from '../../domain/routines'
@@ -59,6 +62,7 @@ export function AnalyticsPage() {
     .filter((routine) => effectiveSelectedRoutineId === 'all' || routine.id === effectiveSelectedRoutineId)
     .map((routine) => ({ routine, summary: getRoutineAdherenceSummary(routine, sessions) }))
   const progressPoints = effectiveSelectedExerciseKey ? getExerciseProgressPoints(filteredSessions, effectiveSelectedExerciseKey) : []
+  const progressChart = effectiveSelectedExerciseKey ? getExerciseSetProgressChart(filteredSessions, effectiveSelectedExerciseKey) : null
   const progressSummary = effectiveSelectedExerciseKey ? getExerciseMilestoneSummary(filteredSessions, effectiveSelectedExerciseKey) : null
 
   return (
@@ -191,6 +195,8 @@ export function AnalyticsPage() {
             </div>
           ) : null}
 
+          {progressChart?.series.length ? <ExerciseSetProgressChartPanel key={effectiveSelectedExerciseKey} chart={progressChart} /> : null}
+
           <div className="analytics-progress-stack">
             {progressPoints.map((point) => (
               <ProgressPointCard key={`${point.sessionId}:${point.performedAt}`} point={point} />
@@ -226,6 +232,122 @@ function AnalyticsKpi({ caption, label, value }: { caption: string; label: strin
       <div className="kpi-label">{label}</div>
       <div className="kpi-value">{value}</div>
       <div className="analytics-kpi-card__caption">{caption}</div>
+    </Card>
+  )
+}
+
+function ExerciseSetProgressChartPanel({ chart }: { chart: ExerciseSetProgressChart }) {
+  const [hiddenSetNumbers, setHiddenSetNumbers] = useState<number[]>([])
+
+  const visibleSeries = useMemo(
+    () => chart.series.filter((entry) => !hiddenSetNumbers.includes(entry.setNumber)),
+    [chart.series, hiddenSetNumbers]
+  )
+
+  const yDomain = resolveWeightDomain(chart.minWeightKg, chart.maxWeightKg)
+  const xPositions = buildXPositions(chart.timeline.map((entry) => entry.performedAt), 320)
+  const yTicks = buildWeightTicks(yDomain)
+  const xTicks = buildTimelineTicks(chart.timeline, xPositions)
+
+  return (
+    <Card className="analytics-set-chart-card" variant="highlight">
+      <div className="history-session-card__header">
+        <div>
+          <strong>Gráfico por set</strong>
+          <p className="routine-summary">Peso en kg por sesión real guardada. Cada línea respeta el número de set del historial, sin promedios truchos.</p>
+        </div>
+        <strong className="analytics-progress-card__weight">{chart.maxWeightKg !== null ? `${chart.maxWeightKg} kg` : 'Sin peso'}</strong>
+      </div>
+
+      <div className="filter-chip-row analytics-set-chart__toggles" role="toolbar" aria-label="Alternar líneas por set">
+        {chart.series.map((entry) => {
+          const isVisible = !hiddenSetNumbers.includes(entry.setNumber)
+          const seriesColor = getSetSeriesColor(entry.setNumber)
+
+          return (
+            <button
+              key={entry.setNumber}
+              aria-pressed={isVisible}
+              className={`filter-chip analytics-set-toggle${isVisible ? ' active' : ''}`}
+              style={isVisible ? { borderColor: seriesColor, boxShadow: `inset 0 0 0 1px ${seriesColor}33` } : undefined}
+              type="button"
+              onClick={() =>
+                setHiddenSetNumbers((current) =>
+                  current.includes(entry.setNumber)
+                    ? current.filter((setNumber) => setNumber !== entry.setNumber)
+                    : [...current, entry.setNumber].sort((left, right) => left - right)
+                )
+              }
+            >
+              Set {entry.setNumber}
+            </button>
+          )
+        })}
+      </div>
+
+      <div className="analytics-set-chart" role="img" aria-label={`Gráfico de progreso por sets de ${chart.exerciseName}`}>
+        <svg className="analytics-set-chart__svg" viewBox="0 0 360 240" aria-hidden="true">
+          {yTicks.map((tick) => {
+            const y = toChartY(tick, yDomain, 180)
+
+            return (
+              <g key={tick}>
+                <line className="analytics-set-chart__grid" x1="32" x2="332" y1={y} y2={y} />
+                <text className="analytics-set-chart__axis-label" x="0" y={y + 4}>
+                  {formatWeightLabel(tick)}
+                </text>
+              </g>
+            )
+          })}
+
+          <line className="analytics-set-chart__axis" x1="32" x2="332" y1="180" y2="180" />
+          <line className="analytics-set-chart__axis" x1="32" x2="32" y1="24" y2="180" />
+
+          {visibleSeries.map((entry) => (
+            <g key={entry.setNumber} data-testid={`analytics-set-series-${entry.setNumber}`}>
+              <path
+                className="analytics-set-chart__line"
+                d={buildSeriesPath(entry, xPositions, yDomain, 180)}
+                stroke={getSetSeriesColor(entry.setNumber)}
+              />
+              {entry.points.map((point, pointIndex) => {
+                if (point.weightKg === null) {
+                  return null
+                }
+
+                return (
+                  <circle
+                    key={`${point.sessionId}:${entry.setNumber}`}
+                    className="analytics-set-chart__point"
+                    cx={xPositions[pointIndex]}
+                    cy={toChartY(point.weightKg, yDomain, 180)}
+                    fill={getSetSeriesColor(entry.setNumber)}
+                    r="4"
+                  />
+                )
+              })}
+            </g>
+          ))}
+
+          {xTicks.map((tick) => (
+            <g key={tick.sessionId}>
+              <line className="analytics-set-chart__tick" x1={tick.x} x2={tick.x} y1="180" y2="188" />
+              <text className="analytics-set-chart__axis-label" textAnchor="middle" x={tick.x} y="206">
+                {formatChartDate(tick.performedAt)}
+              </text>
+              <text className="analytics-set-chart__axis-label analytics-set-chart__axis-label--subtle" textAnchor="middle" x={tick.x} y="222">
+                {formatChartTime(tick.performedAt)}
+              </text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      <p className="analytics-set-chart__summary">
+        {visibleSeries.length > 0
+          ? `${visibleSeries.length} línea${visibleSeries.length === 1 ? '' : 's'} visible${visibleSeries.length === 1 ? '' : 's'} sobre ${chart.timeline.length} sesiones comparables.`
+          : 'No hay sets visibles ahora mismo. Activá al menos uno para recuperar la lectura del progreso.'}
+      </p>
     </Card>
   )
 }
@@ -277,4 +399,113 @@ function formatWorkoutDate(value: string): string {
 
 function formatCompactVolume(value: number): string {
   return `${Math.round(value).toLocaleString('es-AR')} kg`
+}
+
+const ANALYTICS_SET_SERIES_COLORS = ['#ff8a34', '#cf6416', '#db6d19', '#ffb067', '#b45309', '#f59e0b']
+
+function getSetSeriesColor(setNumber: number): string {
+  return ANALYTICS_SET_SERIES_COLORS[(setNumber - 1) % ANALYTICS_SET_SERIES_COLORS.length]
+}
+
+function buildXPositions(values: string[], width: number): number[] {
+  if (values.length <= 1) {
+    return values.map(() => 182)
+  }
+
+  const timestamps = values.map((value) => new Date(value).getTime())
+  const min = Math.min(...timestamps)
+  const max = Math.max(...timestamps)
+
+  if (min === max) {
+    return timestamps.map((_, index) => 32 + (width * index) / Math.max(values.length - 1, 1))
+  }
+
+  return timestamps.map((timestamp) => 32 + ((timestamp - min) / (max - min)) * width)
+}
+
+function buildSeriesPath(series: ExerciseSetProgressSeries, xPositions: number[], yDomain: { min: number; max: number }, chartBottom: number): string {
+  const commands: string[] = []
+  let segmentOpen = false
+
+  series.points.forEach((point, index) => {
+    if (point.weightKg === null) {
+      segmentOpen = false
+
+      return
+    }
+
+    const x = xPositions[index]
+    const y = toChartY(point.weightKg, yDomain, chartBottom)
+
+    commands.push(`${segmentOpen ? 'L' : 'M'} ${x} ${y}`)
+    segmentOpen = true
+  })
+
+  return commands.join(' ')
+}
+
+function resolveWeightDomain(minWeightKg: number | null, maxWeightKg: number | null): { min: number; max: number } {
+  if (minWeightKg === null || maxWeightKg === null) {
+    return { min: 0, max: 1 }
+  }
+
+  if (minWeightKg === maxWeightKg) {
+    return {
+      min: Math.max(0, minWeightKg - 2.5),
+      max: maxWeightKg + 2.5
+    }
+  }
+
+  const padding = Math.max((maxWeightKg - minWeightKg) * 0.12, 2.5)
+
+  return {
+    min: Math.max(0, minWeightKg - padding),
+    max: maxWeightKg + padding
+  }
+}
+
+function buildWeightTicks(domain: { min: number; max: number }): number[] {
+  const step = (domain.max - domain.min) / 3
+
+  return Array.from({ length: 4 }, (_, index) => Number((domain.max - step * index).toFixed(1)))
+}
+
+function buildTimelineTicks(timeline: ExerciseSetProgressChart['timeline'], xPositions: number[]) {
+  if (timeline.length <= 4) {
+    return timeline.map((entry, index) => ({
+      ...entry,
+      x: xPositions[index]
+    }))
+  }
+
+  const candidateIndexes = [0, Math.floor((timeline.length - 1) / 2), timeline.length - 1]
+
+  return Array.from(new Set(candidateIndexes)).map((index) => ({
+    ...timeline[index],
+    x: xPositions[index]
+  }))
+}
+
+function toChartY(weightKg: number, domain: { min: number; max: number }, chartBottom: number): number {
+  const ratio = (weightKg - domain.min) / Math.max(domain.max - domain.min, 1)
+
+  return chartBottom - ratio * 156
+}
+
+function formatWeightLabel(weightKg: number): string {
+  return `${weightKg.toLocaleString('es-AR', { maximumFractionDigits: 1 })} kg`
+}
+
+function formatChartDate(value: string): string {
+  return new Intl.DateTimeFormat('es-AR', {
+    day: 'numeric',
+    month: 'short'
+  }).format(new Date(value))
+}
+
+function formatChartTime(value: string): string {
+  return new Intl.DateTimeFormat('es-AR', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }).format(new Date(value))
 }
