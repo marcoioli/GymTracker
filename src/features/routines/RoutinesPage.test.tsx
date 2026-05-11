@@ -18,6 +18,9 @@ describe('RoutinesPage', () => {
 
     await user.click(screen.getByRole('button', { name: /nueva rutina/i }))
     await user.type(screen.getByLabelText(/nombre de la rutina/i), 'Upper A')
+    const dayCountInputs = screen.getAllByLabelText(/^días$/i)
+    expect(dayCountInputs[0]).toHaveValue(null)
+    fireEvent.change(dayCountInputs[0], { target: { value: '10' } })
     fireEvent.change(screen.getByLabelText(/cantidad de semanas/i), { target: { value: '2' } })
 
     const weekNameInputs = screen.getAllByLabelText(/nombre de la semana/i)
@@ -49,6 +52,8 @@ describe('RoutinesPage', () => {
     const catalogEntry = await db.exerciseCatalog.toCollection().first()
 
     expect(savedRoutine?.weekCount).toBe(2)
+    expect(savedRoutine?.weeks[0]?.days).toHaveLength(10)
+    expect(savedRoutine?.weeks[1]?.days).toHaveLength(10)
     expect(savedRoutine?.weeks[0]?.label).toBe('Semana 1')
     expect(savedRoutine?.weeks[1]?.label).toBe('Semana 2 - descarga')
     expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe('Pecho y espalda')
@@ -115,6 +120,21 @@ describe('RoutinesPage', () => {
       targetRir: 2
     })
   }, 10000)
+
+  it('keeps day count empty on a new routine until the user defines it', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <MemoryRouter>
+        <RoutinesPage />
+      </MemoryRouter>
+    )
+
+    await user.click(screen.getByRole('button', { name: /nueva rutina/i }))
+
+    expect(screen.getByLabelText(/^días$/i)).toHaveValue(null)
+    expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument()
+  })
 
   it('repeats the previous week while editing without mutating the source week', async () => {
     const routineId = 'routine-repeat-edit'
