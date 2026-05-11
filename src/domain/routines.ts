@@ -1,5 +1,4 @@
 export const ROUTINE_DAY_MIN = 1
-export const ROUTINE_DAY_MAX = 7
 export const MUSCLE_GROUPS = ['Pecho', 'Espalda', 'Hombro', 'Biceps', 'Triceps', 'Cuadriceps', 'Isquio', 'PG'] as const
 export const DEFAULT_MUSCLE_GROUP = 'PG'
 
@@ -259,7 +258,7 @@ export function cloneRoutineWeekStructure(sourceWeek: RoutineWeek, label = sourc
 }
 
 export function isValidDayCount(dayCount: number): boolean {
-  return Number.isInteger(dayCount) && dayCount >= ROUTINE_DAY_MIN && dayCount <= ROUTINE_DAY_MAX
+  return Number.isInteger(dayCount) && dayCount >= ROUTINE_DAY_MIN
 }
 
 export function normalizeExerciseName(name: string): string {

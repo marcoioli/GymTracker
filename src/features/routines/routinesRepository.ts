@@ -33,7 +33,7 @@ export function validateRoutineDraft(draft: SaveRoutineDraft): string[] {
 
   draft.weeks.forEach((week, weekIndex) => {
     if (!isValidDayCount(week.days.length)) {
-      errors.push(`La semana ${weekIndex + 1} debe tener entre 1 y 7 días.`)
+      errors.push(`La semana ${weekIndex + 1} debe tener al menos 1 día.`)
     }
 
     week.days.forEach((day, dayIndex) => {
