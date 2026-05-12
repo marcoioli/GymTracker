@@ -1,59 +1,65 @@
-import { useEffect, type PropsWithChildren } from 'react'
+import { useEffect, type PropsWithChildren } from "react";
 
-import { PwaRuntimeBridge } from './pwa-runtime'
-import { ThemeProvider } from './theme'
+import { PwaRuntimeBridge } from "./pwa-runtime";
+import { ThemeProvider } from "./theme";
 
 type SplashWindow = Window & {
-  __treinoSplashStart?: number
-}
+	__treinoSplashStart?: number;
+};
 
-const SPLASH_MIN_VISIBLE_MS = 420
-const SPLASH_FADE_OUT_MS = 240
+const SPLASH_MIN_VISIBLE_MS = 1000;
+const SPLASH_FADE_OUT_MS = 280;
 
 export function AppProviders({ children }: PropsWithChildren) {
-  useEffect(() => {
-    const splashScreen = document.getElementById('app-launch-splash')
+	useEffect(() => {
+		const splashScreen = document.getElementById("app-launch-splash");
 
-    if (!splashScreen) {
-      return
-    }
+		if (!splashScreen) {
+			return;
+		}
 
-    const splashWindow = window as SplashWindow
-    const splashStart = splashWindow.__treinoSplashStart ?? window.performance?.now?.() ?? Date.now()
-    const now = window.performance?.now?.() ?? Date.now()
-    const waitBeforeHide = Math.max(0, SPLASH_MIN_VISIBLE_MS - (now - splashStart))
+		const splashWindow = window as SplashWindow;
+		const splashStart =
+			splashWindow.__treinoSplashStart ??
+			window.performance?.now?.() ??
+			Date.now();
+		const now = window.performance?.now?.() ?? Date.now();
+		const waitBeforeHide = Math.max(
+			0,
+			SPLASH_MIN_VISIBLE_MS - (now - splashStart),
+		);
 
-    let removeSplashScreen = 0
-    const frame = window.requestAnimationFrame(() => {
-      const hideSplashScreen = window.setTimeout(() => {
-        splashScreen.dataset.state = 'hidden'
+		let removeSplashScreen = 0;
+		const frame = window.requestAnimationFrame(() => {
+			const hideSplashScreen = window.setTimeout(() => {
+				splashScreen.dataset.state = "hidden";
 
-        removeSplashScreen = window.setTimeout(() => {
-          splashScreen.remove()
-        }, SPLASH_FADE_OUT_MS)
-      }, waitBeforeHide)
+				removeSplashScreen = window.setTimeout(() => {
+					splashScreen.remove();
+				}, SPLASH_FADE_OUT_MS);
+			}, waitBeforeHide);
 
-      splashScreen.dataset.hideTimer = String(hideSplashScreen)
-    })
+			splashScreen.dataset.hideTimer = String(hideSplashScreen);
+		});
 
-    return () => {
-      window.cancelAnimationFrame(frame)
-      const hideTimer = Number(splashScreen.dataset.hideTimer ?? 0)
+		return () => {
+			window.cancelAnimationFrame(frame);
+			const hideTimer = Number(splashScreen.dataset.hideTimer ?? 0);
 
-      if (hideTimer) {
-        window.clearTimeout(hideTimer)
-      }
+			if (hideTimer) {
+				window.clearTimeout(hideTimer);
+			}
 
-      if (removeSplashScreen) {
-        window.clearTimeout(removeSplashScreen)
-      }
-    }
-  }, [])
+			if (removeSplashScreen) {
+				window.clearTimeout(removeSplashScreen);
+			}
+		};
+	}, []);
 
-  return (
-    <ThemeProvider>
-      <PwaRuntimeBridge />
-      {children}
-    </ThemeProvider>
-  )
+	return (
+		<ThemeProvider>
+			<PwaRuntimeBridge />
+			{children}
+		</ThemeProvider>
+	);
 }
