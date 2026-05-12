@@ -1,37 +1,51 @@
-import { render, screen } from "@testing-library/react";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { render, screen } from '@testing-library/react'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { AppProviders } from "./providers";
+import { AppProviders } from './providers'
 
-describe("AppProviders splash boot flow", () => {
-	beforeEach(() => {
-		vi.useFakeTimers();
-	});
+describe('AppProviders splash boot flow', () => {
+  const originalRequestAnimationFrame = window.requestAnimationFrame
+  const originalCancelAnimationFrame = window.cancelAnimationFrame
 
-	afterEach(() => {
-		vi.useRealTimers();
-	});
+  beforeEach(() => {
+    vi.useFakeTimers()
+    vi.spyOn(window.performance, 'now').mockReturnValue(200)
+    window.requestAnimationFrame = (callback: FrameRequestCallback) => {
+      callback(0)
+      return 1
+    }
+    window.cancelAnimationFrame = vi.fn()
+  })
 
-	it("hides and removes the launch splash after mount", () => {
-		const splashScreen = document.createElement("div");
-		splashScreen.id = "app-launch-splash";
-		document.body.appendChild(splashScreen);
+  afterEach(() => {
+    vi.restoreAllMocks()
+    vi.useRealTimers()
+    window.requestAnimationFrame = originalRequestAnimationFrame
+    window.cancelAnimationFrame = originalCancelAnimationFrame
+  })
 
-		render(
-			<AppProviders>
-				<div>Treino listo</div>
-			</AppProviders>,
-		);
+  it('waits for the minimum visible time before hiding the launch splash', () => {
+    const splashScreen = document.createElement('div')
+    splashScreen.id = 'app-launch-splash'
+    document.body.appendChild(splashScreen)
+    ;(window as Window & { __treinoSplashStart?: number }).__treinoSplashStart = 0
 
-		expect(screen.getByText("Treino listo")).toBeInTheDocument();
-		expect(document.getElementById("app-launch-splash")).toBe(splashScreen);
+    render(
+      <AppProviders>
+        <div>Treino listo</div>
+      </AppProviders>
+    )
 
-		vi.advanceTimersByTime(1);
-		expect(splashScreen).toHaveAttribute("data-state", "hidden");
+    expect(screen.getByText('Treino listo')).not.toBeNull()
+    expect(document.getElementById('app-launch-splash')).toBe(splashScreen)
 
-		vi.advanceTimersByTime(220);
-		expect(
-			document.getElementById("app-launch-splash"),
-		).not.toBeInTheDocument();
-	});
-});
+    vi.advanceTimersByTime(219)
+    expect(splashScreen.getAttribute('data-state')).toBeNull()
+
+    vi.advanceTimersByTime(1)
+    expect(splashScreen.getAttribute('data-state')).toBe('hidden')
+
+    vi.advanceTimersByTime(240)
+    expect(document.getElementById('app-launch-splash')).toBeNull()
+  })
+})
