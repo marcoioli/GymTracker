@@ -1,149 +1,258 @@
-import { render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Route, Routes } from 'react-router-dom'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { db } from '../../db/database'
-import * as sessionRepository from './sessionRepository'
-import { WorkoutSessionScreen } from './WorkoutSessionScreen'
+import { db } from "../../db/database";
+import * as sessionRepository from "./sessionRepository";
+import { WorkoutSessionScreen } from "./WorkoutSessionScreen";
 
-const mockNavigate = vi.fn()
+const mockNavigate = vi.fn();
 
-vi.mock('react-router-dom', async () => {
-  const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
+vi.mock("react-router-dom", async () => {
+	const actual =
+		await vi.importActual<typeof import("react-router-dom")>(
+			"react-router-dom",
+		);
 
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate
-  }
-})
+	return {
+		...actual,
+		useNavigate: () => mockNavigate,
+	};
+});
 
-describe('WorkoutSessionScreen', () => {
-  beforeEach(() => {
-    mockNavigate.mockReset()
-    vi.restoreAllMocks()
-  })
+describe("WorkoutSessionScreen", () => {
+	beforeEach(() => {
+		mockNavigate.mockReset();
+		vi.restoreAllMocks();
+	});
 
-  it('shows previous references and communicates when a set has no prior snapshot', async () => {
-    await seedRoutine()
+	it("shows previous references and communicates when a set has no prior snapshot", async () => {
+		await seedRoutine();
 
-    await db.sessions.add({
-      id: 'session-old',
-      routineId: 'routine-1',
-      routineName: 'Upper Lower',
-      dayId: 'day-1',
-      dayLabel: 'Pull',
-      weekIndex: 0,
-      weekLabel: 'Semana 1',
-      status: 'completed',
-      notes: 'volver más fresco para no perder postura',
-      startedAt: '2026-05-04T10:00:00.000Z',
-      endedAt: '2026-05-04T10:40:00.000Z',
-      exercises: [
-        {
-          id: 'snapshot-old',
-          exerciseTemplateId: 'exercise-1',
-          exerciseName: 'Remo con barra',
-          targetSets: 2,
-          targetRir: 1,
-          notes: 'mantener pecho arriba y no tirar con bíceps',
-          sets: [{ id: 'set-1', setNumber: 1, reps: 8, weightKg: 70, actualRir: 1 }]
-        }
-      ]
-    })
+		await db.sessions.add({
+			id: "session-old",
+			routineId: "routine-1",
+			routineName: "Upper Lower",
+			dayId: "day-1",
+			dayLabel: "Pull",
+			weekIndex: 0,
+			weekLabel: "Semana 1",
+			status: "completed",
+			notes: "volver más fresco para no perder postura",
+			startedAt: "2026-05-04T10:00:00.000Z",
+			endedAt: "2026-05-04T10:40:00.000Z",
+			exercises: [
+				{
+					id: "snapshot-old",
+					exerciseTemplateId: "exercise-1",
+					exerciseName: "Remo con barra",
+					targetSets: 2,
+					targetRir: 1,
+					muscle: "Espalda",
+					notes: "mantener pecho arriba y no tirar con bíceps",
+					sets: [
+						{ id: "set-1", setNumber: 1, reps: 8, weightKg: 70, actualRir: 1 },
+					],
+				},
+			],
+		});
 
-    renderSessionScreen()
+		renderSessionScreen();
 
-    expect(await screen.findByText(/\(70 kg\) × 8/i)).toBeInTheDocument()
-    expect(screen.getByText(/^—$/)).toBeInTheDocument()
-    expect(screen.getByText(/volver más fresco para no perder postura/i)).toBeInTheDocument()
-    expect(screen.getByText(/mantener pecho arriba y no tirar con bíceps/i)).toBeInTheDocument()
-  })
+		expect(await screen.findByText(/\(70 kg\) × 8/i)).toBeInTheDocument();
+		expect(screen.getByText(/^—$/)).toBeInTheDocument();
+		expect(
+			screen.getByText(/volver más fresco para no perder postura/i),
+		).toBeInTheDocument();
+		expect(
+			screen.getByText(/mantener pecho arriba y no tirar con bíceps/i),
+		).toBeInTheDocument();
+	});
 
-  it('shows visible saving feedback and returns with a success flag', async () => {
-    const user = userEvent.setup()
-    await seedRoutine()
+	it("uses routine targets as placeholders and saves decimal weights with comma input", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
 
-    let resolveSave: ((value: Awaited<ReturnType<typeof sessionRepository.saveWorkoutSession>>) => void) | null = null
-    const savePromise = new Promise<Awaited<ReturnType<typeof sessionRepository.saveWorkoutSession>>>((resolve) => {
-      resolveSave = resolve
-    })
+		renderSessionScreen();
 
-    vi.spyOn(sessionRepository, 'saveWorkoutSession').mockReturnValue(savePromise)
+		expect(await screen.findByLabelText(/peso kg serie 1/i)).toHaveAttribute(
+			"placeholder",
+			"22,5",
+		);
+		expect(screen.getByLabelText(/reps serie 1/i)).toHaveAttribute(
+			"placeholder",
+			"8-10",
+		);
+		expect(screen.getByLabelText(/rir real serie 1/i)).toHaveAttribute(
+			"placeholder",
+			"2",
+		);
+		expect(screen.getByLabelText(/peso kg serie 2/i)).not.toHaveAttribute(
+			"placeholder",
+		);
+		expect(screen.getByLabelText(/reps serie 2/i)).toHaveAttribute(
+			"placeholder",
+			"10-12",
+		);
+		expect(screen.getByLabelText(/rir real serie 2/i)).toHaveAttribute(
+			"placeholder",
+			"1",
+		);
 
-    renderSessionScreen()
+		await user.type(screen.getByLabelText(/peso kg serie 1/i), "22,5");
+		await user.type(screen.getByLabelText(/reps serie 1/i), "10");
+		await user.type(screen.getByLabelText(/rir real serie 1/i), "1");
+		await user.click(screen.getByRole("button", { name: /finalizar sesión/i }));
 
-    await screen.findByRole('heading', { name: 'Pull' })
-    await user.type(screen.getByLabelText(/nota rápida de la sesión/i), 'sentí poca estabilidad al final')
-    await user.type(screen.getByLabelText(/nota rápida del ejercicio/i), 'subir 2.5 kg si mantengo forma')
-    await user.click(screen.getByRole('button', { name: /finalizar sesión/i }))
+		await waitFor(() => {
+			expect(mockNavigate).toHaveBeenCalledWith("/?sessionSaved=completed");
+		});
 
-    expect(sessionRepository.saveWorkoutSession).toHaveBeenCalledWith(
-      expect.objectContaining({
-        notes: 'sentí poca estabilidad al final',
-        exercises: [expect.objectContaining({ notes: 'subir 2.5 kg si mantengo forma' })]
-      })
-    )
+		const savedSession = await db.sessions.orderBy("endedAt").last();
 
-    expect(screen.getByRole('status')).toHaveTextContent(/guardando sesión finalizada/i)
-    expect(screen.getByRole('button', { name: /guardando finalización/i })).toBeDisabled()
+		expect(savedSession?.exercises[0]?.sets[0]).toMatchObject({
+			weightKg: 22.5,
+			reps: 10,
+			actualRir: 1,
+		});
+	});
 
-    resolveSave?.({
-      id: 'session-new',
-      routineId: 'routine-1',
-      routineName: 'Upper Lower',
-      dayId: 'day-1',
-      dayLabel: 'Pull',
-      weekIndex: 0,
-      weekLabel: 'Semana 1',
-      status: 'completed',
-      notes: 'sentí poca estabilidad al final',
-      startedAt: '2026-05-05T10:00:00.000Z',
-      endedAt: '2026-05-05T10:30:00.000Z',
-      exercises: []
-    })
+	it("shows visible saving feedback and returns with a success flag", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
 
-    await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/?sessionSaved=completed')
-    })
-  })
-})
+		let resolveSave:
+			| ((
+					value: Awaited<
+						ReturnType<typeof sessionRepository.saveWorkoutSession>
+					>,
+			  ) => void)
+			| null = null;
+		const savePromise = new Promise<
+			Awaited<ReturnType<typeof sessionRepository.saveWorkoutSession>>
+		>((resolve) => {
+			resolveSave = resolve;
+		});
+
+		vi.spyOn(sessionRepository, "saveWorkoutSession").mockReturnValue(
+			savePromise,
+		);
+
+		renderSessionScreen();
+
+		await screen.findByRole("heading", { name: "Pull" });
+		await user.type(
+			screen.getByLabelText(/nota rápida de la sesión/i),
+			"sentí poca estabilidad al final",
+		);
+		await user.type(
+			screen.getByLabelText(/nota rápida del ejercicio/i),
+			"subir 2.5 kg si mantengo forma",
+		);
+		await user.click(screen.getByRole("button", { name: /finalizar sesión/i }));
+
+		expect(sessionRepository.saveWorkoutSession).toHaveBeenCalledWith(
+			expect.objectContaining({
+				notes: "sentí poca estabilidad al final",
+				exercises: [
+					expect.objectContaining({ notes: "subir 2.5 kg si mantengo forma" }),
+				],
+			}),
+		);
+
+		expect(screen.getByRole("status")).toHaveTextContent(
+			/guardando sesión finalizada/i,
+		);
+		expect(
+			screen.getByRole("button", { name: /guardando finalización/i }),
+		).toBeDisabled();
+
+		resolveSave?.({
+			id: "session-new",
+			routineId: "routine-1",
+			routineName: "Upper Lower",
+			dayId: "day-1",
+			dayLabel: "Pull",
+			weekIndex: 0,
+			weekLabel: "Semana 1",
+			status: "completed",
+			notes: "sentí poca estabilidad al final",
+			startedAt: "2026-05-05T10:00:00.000Z",
+			endedAt: "2026-05-05T10:30:00.000Z",
+			exercises: [],
+		});
+
+		await waitFor(() => {
+			expect(mockNavigate).toHaveBeenCalledWith("/?sessionSaved=completed");
+		});
+	});
+});
 
 function renderSessionScreen() {
-  return render(
-    <MemoryRouter initialEntries={['/session/routine-1/0/day-1?startedAt=2026-05-05T10:00:00.000Z']}>
-      <Routes>
-        <Route path="/session/:routineId/:weekIndex/:dayId" element={<WorkoutSessionScreen />} />
-      </Routes>
-    </MemoryRouter>
-  )
+	return render(
+		<MemoryRouter
+			initialEntries={[
+				"/session/routine-1/0/day-1?startedAt=2026-05-05T10:00:00.000Z",
+			]}
+		>
+			<Routes>
+				<Route
+					path="/session/:routineId/:weekIndex/:dayId"
+					element={<WorkoutSessionScreen />}
+				/>
+			</Routes>
+		</MemoryRouter>,
+	);
 }
 
 async function seedRoutine() {
-  await db.routines.add({
-    id: 'routine-1',
-    name: 'Upper Lower',
-    status: 'active',
-    weekCount: 1,
-    weeks: [
-      {
-        id: 'week-1',
-        label: 'Semana 1',
-        days: [
-          {
-            id: 'day-1',
-            label: 'Pull',
-            exercises: [{ id: 'exercise-1', name: 'Remo con barra', targetSets: 2, targetRir: 1 }]
-          }
-        ]
-      }
-    ],
-    progress: {
-      currentWeekIndex: 0,
-      lastCompletedDayId: null,
-      lastCompletedAt: null
-    },
-    createdAt: '2026-05-05T10:00:00.000Z',
-    updatedAt: '2026-05-05T10:00:00.000Z'
-  })
+	await db.routines.add({
+		id: "routine-1",
+		name: "Upper Lower",
+		status: "active",
+		weekCount: 1,
+		weeks: [
+			{
+				id: "week-1",
+				label: "Semana 1",
+				days: [
+					{
+						id: "day-1",
+						label: "Pull",
+						exercises: [
+							{
+								id: "exercise-1",
+								name: "Remo con barra",
+								targetSets: 2,
+								targetRir: 1,
+								muscle: "Espalda",
+								setReferences: [
+									{
+										id: "ref-1",
+										weightTarget: "22,5",
+										repsTarget: "8-10",
+										rirTarget: "2",
+									},
+									{
+										id: "ref-2",
+										weightTarget: "",
+										repsTarget: "10-12",
+										rirTarget: "1",
+									},
+								],
+							},
+						],
+					},
+				],
+			},
+		],
+		progress: {
+			currentWeekIndex: 0,
+			lastCompletedDayId: null,
+			lastCompletedAt: null,
+		},
+		createdAt: "2026-05-05T10:00:00.000Z",
+		updatedAt: "2026-05-05T10:00:00.000Z",
+	});
 }
