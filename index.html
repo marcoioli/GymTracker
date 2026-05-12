@@ -7,9 +7,276 @@
     <link rel="icon" href="/icons/treino-app-icon.png" type="image/png" />
     <link rel="apple-touch-icon" href="/icons/treino-app-icon.png" />
     <title>Treino</title>
+    <script>
+      (() => {
+        const theme =
+          window.localStorage.getItem("gymtracker:theme") === "light"
+            ? "light"
+            : "dark";
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+      }
+
+      body {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(255, 122, 26, 0.22),
+            transparent 24%
+          ),
+          linear-gradient(180deg, #140b08 0%, #090606 100%);
+        color: #fff6f1;
+      }
+
+      #app-launch-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        padding: 24px;
+        background:
+          radial-gradient(
+            circle at 50% 20%,
+            rgba(255, 138, 52, 0.2),
+            transparent 24%
+          ),
+          radial-gradient(
+            circle at 50% 72%,
+            rgba(255, 138, 52, 0.08),
+            transparent 32%
+          ),
+          linear-gradient(180deg, rgba(20, 11, 8, 0.98), rgba(9, 6, 6, 1));
+        opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 220ms ease,
+          visibility 220ms ease;
+      }
+
+      #app-launch-splash[data-state="hidden"] {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .launch-splash__content {
+        width: min(100%, 280px);
+        display: grid;
+        justify-items: center;
+        gap: 18px;
+        text-align: center;
+      }
+
+      .launch-splash__mark-wrap {
+        position: relative;
+        width: 112px;
+        height: 112px;
+        display: grid;
+        place-items: center;
+      }
+
+      .launch-splash__mark-wrap::before,
+      .launch-splash__mark-wrap::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: 32px;
+      }
+
+      .launch-splash__mark-wrap::before {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.08),
+          rgba(255, 255, 255, 0.02)
+        );
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow:
+          0 24px 48px rgba(0, 0, 0, 0.36),
+          inset 0 1px 0 rgba(255, 255, 255, 0.08);
+        backdrop-filter: blur(14px);
+      }
+
+      .launch-splash__mark-wrap::after {
+        inset: -10px;
+        border: 1px solid rgba(255, 138, 52, 0.18);
+        opacity: 0.9;
+        animation: launch-splash-pulse 1.8s ease-in-out infinite;
+      }
+
+      .launch-splash__mark {
+        position: relative;
+        z-index: 1;
+        width: 72px;
+        height: 72px;
+        object-fit: contain;
+        filter: drop-shadow(0 14px 28px rgba(0, 0, 0, 0.28));
+        animation: launch-splash-float 1.8s ease-in-out infinite;
+      }
+
+      .launch-splash__wordmark {
+        font:
+          700 2rem/0.95 "Barlow",
+          sans-serif;
+        letter-spacing: -0.04em;
+      }
+
+      .launch-splash__label {
+        color: rgba(255, 246, 241, 0.78);
+        font:
+          500 0.92rem/1.4 "Barlow",
+          sans-serif;
+      }
+
+      .launch-splash__progress {
+        position: relative;
+        width: min(100%, 180px);
+        height: 4px;
+        overflow: hidden;
+        border-radius: 999px;
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      .launch-splash__progress::after {
+        content: "";
+        position: absolute;
+        inset: 0;
+        width: 42%;
+        border-radius: inherit;
+        background: linear-gradient(
+          90deg,
+          rgba(255, 138, 52, 0),
+          rgba(255, 138, 52, 0.95),
+          rgba(255, 208, 175, 1)
+        );
+        box-shadow: 0 0 18px rgba(255, 138, 52, 0.45);
+        animation: launch-splash-loading 1.15s ease-in-out infinite;
+      }
+
+      :root[data-theme="light"] {
+        color-scheme: light;
+      }
+
+      :root[data-theme="light"] body {
+        background:
+          radial-gradient(
+            circle at top,
+            rgba(255, 138, 52, 0.14),
+            transparent 26%
+          ),
+          linear-gradient(180deg, #fffaf5 0%, #f6efe8 100%);
+        color: #20110a;
+      }
+
+      :root[data-theme="light"] #app-launch-splash {
+        background:
+          radial-gradient(
+            circle at 50% 18%,
+            rgba(255, 138, 52, 0.16),
+            transparent 26%
+          ),
+          radial-gradient(
+            circle at 50% 72%,
+            rgba(255, 138, 52, 0.08),
+            transparent 34%
+          ),
+          linear-gradient(
+            180deg,
+            rgba(255, 250, 245, 0.98),
+            rgba(246, 239, 232, 1)
+          );
+      }
+
+      :root[data-theme="light"] .launch-splash__mark-wrap::before {
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.86),
+          rgba(255, 248, 242, 0.76)
+        );
+        border-color: rgba(32, 17, 10, 0.08);
+        box-shadow:
+          0 24px 48px rgba(82, 44, 20, 0.14),
+          inset 0 1px 0 rgba(255, 255, 255, 0.68);
+      }
+
+      :root[data-theme="light"] .launch-splash__label {
+        color: rgba(32, 17, 10, 0.66);
+      }
+
+      @keyframes launch-splash-loading {
+        0% {
+          transform: translateX(-140%);
+        }
+
+        100% {
+          transform: translateX(320%);
+        }
+      }
+
+      @keyframes launch-splash-float {
+        0%,
+        100% {
+          transform: translateY(0) scale(1);
+        }
+
+        50% {
+          transform: translateY(-4px) scale(1.015);
+        }
+      }
+
+      @keyframes launch-splash-pulse {
+        0%,
+        100% {
+          transform: scale(0.96);
+          opacity: 0.42;
+        }
+
+        50% {
+          transform: scale(1.04);
+          opacity: 1;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #app-launch-splash,
+        .launch-splash__mark,
+        .launch-splash__mark-wrap::after,
+        .launch-splash__progress::after {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="app-launch-splash" aria-label="Treino está cargando" role="status">
+      <div class="launch-splash__content">
+        <div class="launch-splash__mark-wrap" aria-hidden="true">
+          <img
+            alt=""
+            class="launch-splash__mark"
+            src="/icons/logoTreinoPNG.png"
+          />
+        </div>
+        <div>
+          <div class="launch-splash__wordmark">Treino</div>
+          <div class="launch-splash__label">Preparando tu entrenamiento</div>
+        </div>
+        <div aria-hidden="true" class="launch-splash__progress"></div>
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-  </html>
+</html>
