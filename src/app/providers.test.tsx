@@ -4,18 +4,32 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AppProviders } from "./providers";
 
 describe("AppProviders splash boot flow", () => {
+	const originalRequestAnimationFrame = window.requestAnimationFrame;
+	const originalCancelAnimationFrame = window.cancelAnimationFrame;
+
 	beforeEach(() => {
 		vi.useFakeTimers();
+		vi.spyOn(window.performance, "now").mockReturnValue(250);
+		window.requestAnimationFrame = (callback: FrameRequestCallback) => {
+			callback(0);
+			return 1;
+		};
+		window.cancelAnimationFrame = vi.fn();
 	});
 
 	afterEach(() => {
+		vi.restoreAllMocks();
 		vi.useRealTimers();
+		window.requestAnimationFrame = originalRequestAnimationFrame;
+		window.cancelAnimationFrame = originalCancelAnimationFrame;
 	});
 
-	it("hides and removes the launch splash after mount", () => {
+	it("waits for the minimum visible time before hiding the launch splash", () => {
 		const splashScreen = document.createElement("div");
 		splashScreen.id = "app-launch-splash";
 		document.body.appendChild(splashScreen);
+		(window as Window & { __treinoSplashStart?: number }).__treinoSplashStart =
+			0;
 
 		render(
 			<AppProviders>
@@ -23,15 +37,16 @@ describe("AppProviders splash boot flow", () => {
 			</AppProviders>,
 		);
 
-		expect(screen.getByText("Treino listo")).toBeInTheDocument();
+		expect(screen.getByText("Treino listo")).not.toBeNull();
 		expect(document.getElementById("app-launch-splash")).toBe(splashScreen);
 
-		vi.advanceTimersByTime(1);
-		expect(splashScreen).toHaveAttribute("data-state", "hidden");
+		vi.advanceTimersByTime(749);
+		expect(splashScreen.getAttribute("data-state")).toBeNull();
 
-		vi.advanceTimersByTime(220);
-		expect(
-			document.getElementById("app-launch-splash"),
-		).not.toBeInTheDocument();
+		vi.advanceTimersByTime(1);
+		expect(splashScreen.getAttribute("data-state")).toBe("hidden");
+
+		vi.advanceTimersByTime(280);
+		expect(document.getElementById("app-launch-splash")).toBeNull();
 	});
 });
