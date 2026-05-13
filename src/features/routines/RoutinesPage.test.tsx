@@ -40,9 +40,6 @@ describe("RoutinesPage", () => {
 
 		await user.type(screen.getByLabelText(/^ejercicio$/i), "Press banca");
 		await user.click(screen.getByRole("button", { name: /agregar serie/i }));
-		fireEvent.change(screen.getAllByLabelText(/peso objetivo serie/i)[0], {
-			target: { value: "22,5" },
-		});
 		fireEvent.change(
 			screen.getAllByLabelText(/repeticiones objetivo serie/i)[0],
 			{ target: { value: "8-12" } },
@@ -83,7 +80,7 @@ describe("RoutinesPage", () => {
 		expect(
 			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]
 				?.weightTarget,
-		).toBe("22,5");
+		).toBe("");
 		expect(
 			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]
 				?.repsTarget,
@@ -97,7 +94,7 @@ describe("RoutinesPage", () => {
 		expect(
 			savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]
 				?.weightTarget,
-		).toBe("22,5");
+		).toBe("");
 		expect(savedRoutine?.weeks[1]?.id).not.toBe(savedRoutine?.weeks[0]?.id);
 		expect(savedRoutine?.weeks[1]?.days[0]?.id).not.toBe(
 			savedRoutine?.weeks[0]?.days[0]?.id,

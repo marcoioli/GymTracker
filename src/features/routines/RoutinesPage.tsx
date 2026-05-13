@@ -695,7 +695,6 @@ export function RoutinesPage() {
 																	aria-hidden="true"
 																>
 																	<span>Set</span>
-																	<span>Peso</span>
 																	<span>Repeticiones</span>
 																	<span>RIR</span>
 																	<span />
@@ -710,34 +709,6 @@ export function RoutinesPage() {
 																			<span className="routine-series-planner__index">
 																				{setIndex + 1}
 																			</span>
-
-																			<input
-																				aria-label={`Peso objetivo serie ${setIndex + 1}`}
-																				className="track-set-input track-set-input--routine"
-																				inputMode="decimal"
-																				placeholder="24"
-																				type="text"
-																				value={setReference.weightTarget}
-																				onChange={(event) => {
-																					updateFormState(
-																						setFormState,
-																						(current) => ({
-																							...current,
-																							weeks: updateExerciseSetReference(
-																								current.weeks,
-																								week.id,
-																								day.id,
-																								exercise.id,
-																								setReference.id,
-																								{
-																									weightTarget:
-																										event.target.value,
-																								},
-																							),
-																						}),
-																					);
-																				}}
-																			/>
 
 																			<input
 																				aria-label={`Repeticiones objetivo serie ${setIndex + 1}`}

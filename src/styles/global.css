@@ -2436,7 +2436,7 @@ body {
 .routine-series-planner__head,
 .routine-series-planner__row {
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 40px 40px;
+  grid-template-columns: 40px minmax(0, 1fr) minmax(0, 1fr) 40px;
   gap: 10px;
   align-items: center;
 }
@@ -2701,7 +2701,7 @@ body {
 
   .routine-series-planner__head,
   .routine-series-planner__row {
-    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr) 34px 34px;
+    grid-template-columns: 34px minmax(0, 1fr) minmax(0, 1fr) 34px;
     gap: 8px;
   }
 
