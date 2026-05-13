@@ -42,7 +42,6 @@
         z-index: 9999;
         display: grid;
         place-items: center;
-        overflow: hidden;
         background:
           radial-gradient(
             circle at 50% 30%,
@@ -52,20 +51,17 @@
           #F74000;
         opacity: 1;
         visibility: visible;
-      }
-
-      /* Fade out fallback — used when user prefers reduced motion */
-      #app-launch-splash[data-state="hidden"] {
-        opacity: 0;
-        visibility: hidden;
         transition:
           opacity 320ms ease,
           visibility 320ms ease;
       }
 
+      #app-launch-splash[data-state="hidden"] {
+        opacity: 0;
+        visibility: hidden;
+      }
+
       .launch-splash__content {
-        position: relative;
-        z-index: 2;
         display: grid;
         place-items: center;
         animation: launch-splash-enter 560ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -77,84 +73,6 @@
         object-fit: contain;
         filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.25));
         animation: launch-splash-float 2.2s ease-in-out infinite;
-      }
-
-      /* Shatter container — holds fragment divs created by JS */
-      .launch-splash__shatter {
-        position: absolute;
-        inset: 0;
-        z-index: 1;
-        pointer-events: none;
-      }
-
-      /* Flash crack at center just before shatter */
-      .launch-splash__shatter::before {
-        content: "";
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        width: 0;
-        height: 0;
-        border-radius: 50%;
-        background: rgba(255, 255, 255, 0.6);
-        box-shadow: 0 0 40px 20px rgba(255, 255, 255, 0.3);
-        transform: translate(-50%, -50%) scale(0);
-        transition: transform 120ms ease-out;
-      }
-
-      #app-launch-splash[data-state="shatter"] .launch-splash__shatter::before {
-        transform: translate(-50%, -50%) scale(30);
-      }
-
-      /* Fragment pieces */
-      .launch-splash__fragment {
-        position: absolute;
-        inset: 0;
-        background: #F74000;
-        will-change: transform, opacity;
-      }
-
-      /* Each quadrant breaks away from center */
-      .launch-splash__fragment[data-piece="0"] {
-        clip-path: inset(0 50% 50% 0);
-      }
-
-      .launch-splash__fragment[data-piece="1"] {
-        clip-path: inset(0 0 50% 50%);
-      }
-
-      .launch-splash__fragment[data-piece="2"] {
-        clip-path: inset(50% 50% 0 0);
-      }
-
-      .launch-splash__fragment[data-piece="3"] {
-        clip-path: inset(50% 0 0 50%);
-      }
-
-      /* Shatter animation — each fragment flies outward */
-      #app-launch-splash[data-state="shatter"] .launch-splash__fragment {
-        animation: launch-splash-piece-out 550ms cubic-bezier(0.32, 0, 0.67, 0) both;
-      }
-
-      #app-launch-splash[data-state="shatter"] .launch-splash__fragment[data-piece="0"] {
-        animation-name: launch-splash-piece-tl;
-      }
-
-      #app-launch-splash[data-state="shatter"] .launch-splash__fragment[data-piece="1"] {
-        animation-name: launch-splash-piece-tr;
-      }
-
-      #app-launch-splash[data-state="shatter"] .launch-splash__fragment[data-piece="2"] {
-        animation-name: launch-splash-piece-bl;
-      }
-
-      #app-launch-splash[data-state="shatter"] .launch-splash__fragment[data-piece="3"] {
-        animation-name: launch-splash-piece-br;
-      }
-
-      /* Fade the logo during shatter */
-      #app-launch-splash[data-state="shatter"] .launch-splash__mark {
-        animation: launch-splash-mark-out 300ms ease-out both;
       }
 
       @keyframes launch-splash-enter {
@@ -180,93 +98,11 @@
         }
       }
 
-      @keyframes launch-splash-mark-out {
-        0% {
-          opacity: 1;
-          transform: scale(1);
-        }
-
-        100% {
-          opacity: 0;
-          transform: scale(0.6);
-        }
-      }
-
-      @keyframes launch-splash-piece-out {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) rotate(0deg);
-        }
-
-        100% {
-          opacity: 0;
-          transform: translate(0, 0) rotate(0deg);
-        }
-      }
-
-      @keyframes launch-splash-piece-tl {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) rotate(0deg);
-        }
-
-        100% {
-          opacity: 0;
-          transform: translate(-15vw, -15vh) rotate(-12deg);
-        }
-      }
-
-      @keyframes launch-splash-piece-tr {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) rotate(0deg);
-        }
-
-        100% {
-          opacity: 0;
-          transform: translate(15vw, -15vh) rotate(12deg);
-        }
-      }
-
-      @keyframes launch-splash-piece-bl {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) rotate(0deg);
-        }
-
-        100% {
-          opacity: 0;
-          transform: translate(-15vw, 15vh) rotate(10deg);
-        }
-      }
-
-      @keyframes launch-splash-piece-br {
-        0% {
-          opacity: 1;
-          transform: translate(0, 0) rotate(0deg);
-        }
-
-        100% {
-          opacity: 0;
-          transform: translate(15vw, 15vh) rotate(-10deg);
-        }
-      }
-
       @media (prefers-reduced-motion: reduce) {
         #app-launch-splash {
           transition:
             opacity 320ms ease,
             visibility 320ms ease;
-        }
-
-        #app-launch-splash[data-state="shatter"] {
-          opacity: 0;
-          visibility: hidden;
-        }
-
-        #app-launch-splash[data-state="shatter"] .launch-splash__fragment {
-          animation: none !important;
-          opacity: 0;
         }
 
         .launch-splash__content,
@@ -285,7 +121,6 @@
           src="/icons/logoTreinoPNG.png"
         />
       </div>
-      <div class="launch-splash__shatter" aria-hidden="true"></div>
     </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>

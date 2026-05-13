@@ -8,29 +8,7 @@ type SplashWindow = Window & {
 };
 
 const SPLASH_MIN_VISIBLE_MS = 1000;
-const SHATTER_DURATION_MS = 600;
-const FRAGMENT_COUNT = 4;
-
-function createShatterFragments(splash: HTMLElement): HTMLElement[] {
-	const container = splash.querySelector(".launch-splash__shatter");
-
-	if (!container) {
-		return [];
-	}
-
-	const fragments: HTMLElement[] = [];
-
-	for (let i = 0; i < FRAGMENT_COUNT; i++) {
-		const piece = document.createElement("div");
-		piece.className = "launch-splash__fragment";
-		piece.dataset.piece = String(i);
-		piece.setAttribute("aria-hidden", "true");
-		container.appendChild(piece);
-		fragments.push(piece);
-	}
-
-	return fragments;
-}
+const SPLASH_FADE_OUT_MS = 320;
 
 export function AppProviders({ children }: PropsWithChildren) {
 	useEffect(() => {
@@ -53,20 +31,15 @@ export function AppProviders({ children }: PropsWithChildren) {
 
 		let removeSplashScreen = 0;
 		const frame = window.requestAnimationFrame(() => {
-			const shatterSplash = window.setTimeout(() => {
-				// Create fragments before triggering the animation
-				createShatterFragments(splashScreen);
+			const hideSplashScreen = window.setTimeout(() => {
+				splashScreen.dataset.state = "hidden";
 
-				// Trigger the shatter animation
-				splashScreen.dataset.state = "shatter";
-
-				// Remove after animation completes
 				removeSplashScreen = window.setTimeout(() => {
 					splashScreen.remove();
-				}, SHATTER_DURATION_MS);
+				}, SPLASH_FADE_OUT_MS);
 			}, waitBeforeHide);
 
-			splashScreen.dataset.hideTimer = String(shatterSplash);
+			splashScreen.dataset.hideTimer = String(hideSplashScreen);
 		});
 
 		return () => {
