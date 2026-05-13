@@ -27,10 +27,6 @@ describe("AppProviders splash boot flow", () => {
 	it("waits for the minimum visible time before hiding the launch splash", () => {
 		const splashScreen = document.createElement("div");
 		splashScreen.id = "app-launch-splash";
-		const shatterContainer = document.createElement("div");
-		shatterContainer.className = "launch-splash__shatter";
-		shatterContainer.setAttribute("aria-hidden", "true");
-		splashScreen.appendChild(shatterContainer);
 		document.body.appendChild(splashScreen);
 		(window as Window & { __treinoSplashStart?: number }).__treinoSplashStart =
 			0;
@@ -48,9 +44,9 @@ describe("AppProviders splash boot flow", () => {
 		expect(splashScreen.getAttribute("data-state")).toBeNull();
 
 		vi.advanceTimersByTime(1);
-		expect(splashScreen.getAttribute("data-state")).toBe("shatter");
+		expect(splashScreen.getAttribute("data-state")).toBe("hidden");
 
-		vi.advanceTimersByTime(600);
+		vi.advanceTimersByTime(320);
 		expect(document.getElementById("app-launch-splash")).toBeNull();
 	});
 });
