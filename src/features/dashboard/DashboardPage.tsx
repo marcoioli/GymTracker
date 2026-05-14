@@ -2,7 +2,6 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks'
 
-import { getSessionVolume } from '../../domain/analytics'
 import { getSuggestedRoutineDay } from '../../domain/routines'
 import type { WorkoutSession } from '../../domain/sessions'
 import { db } from '../../db/database'
@@ -10,8 +9,7 @@ import { Button, Card, EmptyState, PageSection, StatusBanner } from '../../share
 import { getActiveRoutine } from '../routines/routinesRepository'
 import { ConfirmWorkoutDayModal } from '../session/ConfirmWorkoutDayModal'
 import { getWorkoutDayLabel } from '../session/sessionRepository'
-
-const ARGENTINA_TIME_ZONE = 'America/Argentina/Buenos_Aires'
+import { TrackerWeekOverview } from './TrackerWeekOverview'
 
 export function DashboardPage() {
   const navigate = useNavigate()
@@ -88,7 +86,7 @@ export function DashboardPage() {
         ) : (
           <div className="tracker-history-stack" role="list" aria-label="Historial reciente de entrenamientos">
             {sessions.slice(0, 8).map((session) => (
-              <TrackerHistoryCard key={session.id} session={session} />
+              <TrackerHistoryCard key={session.id} navigate={navigate} session={session} />
             ))}
           </div>
         )}
@@ -109,57 +107,30 @@ export function DashboardPage() {
   )
 }
 
-function TrackerWeekOverview() {
-  const today = new Date()
-  const currentDayLabel = new Intl.DateTimeFormat('es-AR', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-    timeZone: ARGENTINA_TIME_ZONE
-  }).format(today)
-
-  const monday = getWeekMonday(today)
-  const todayKey = formatArgentinaDateKey(today)
-  const weekDays = Array.from({ length: 7 }, (_, index) => {
-    const current = new Date(monday)
-    current.setDate(monday.getDate() + index)
-    const isToday = formatArgentinaDateKey(current) === todayKey
-
-    return {
-      id: formatArgentinaDateKey(current),
-      isToday,
-      letter: new Intl.DateTimeFormat('es-AR', { weekday: 'short', timeZone: ARGENTINA_TIME_ZONE }).format(current).slice(0, 1).toUpperCase(),
-      dayNumber: new Intl.DateTimeFormat('es-AR', { day: 'numeric', timeZone: ARGENTINA_TIME_ZONE }).format(current)
-    }
-  })
-
-  return (
-    <Card as="article" className="tracker-week-overview">
-      <div className="tracker-week-overview__header">
-        <div>
-          <p className="eyebrow">Semana actual</p>
-          <h3 className="routine-card-title">{capitalize(currentDayLabel)}</h3>
-        </div>
-        <span className="tracker-week-overview__today-pill">Hoy</span>
-      </div>
-
-      <div className="tracker-week-overview__days" aria-label="Días de la semana actual">
-        {weekDays.map((day) => (
-          <div className={`tracker-week-overview__day${day.isToday ? ' is-today' : ''}`} key={day.id}>
-            <span>{day.letter}</span>
-            <strong>{day.dayNumber}</strong>
-          </div>
-        ))}
-      </div>
-    </Card>
-  )
-}
-
-function TrackerHistoryCard({ session }: { session: WorkoutSession }) {
+function TrackerHistoryCard({ session, navigate }: { session: WorkoutSession; navigate: (path: string) => void }) {
   const setCount = session.exercises.reduce((total, exercise) => total + exercise.sets.length, 0)
 
+  function handleClick() {
+    navigate(`/history/${session.id}`)
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      navigate(`/history/${session.id}`)
+    }
+  }
+
   return (
-    <Card as="article" className="tracker-history-card" role="listitem">
+    <Card
+      aria-label={`Ver detalles de la sesión: ${formatSessionTitle(session)}`}
+      as="article"
+      className="tracker-history-card"
+      onClick={handleClick}
+      onKeyDown={handleKeyDown}
+      role="listitem"
+      tabIndex={0}
+    >
       <div className="tracker-history-card__header">
         <div>
           <h3 className="routine-card-title">{formatSessionTitle(session)}</h3>
@@ -175,7 +146,6 @@ function TrackerHistoryCard({ session }: { session: WorkoutSession }) {
       <div className="tracker-history-card__metrics" aria-label="Resumen de la sesión">
         <TrackerMetric label="Sets Logged" value={`${setCount}`} />
         <TrackerMetric label="Duration" value={formatDuration(session.startedAt, session.endedAt)} />
-        <TrackerMetric accent label="Volume" value={`${Math.round(getSessionVolume(session)).toLocaleString('es-AR')} kg`} />
       </div>
     </Card>
   )
@@ -236,33 +206,4 @@ function formatLastCompleted(value?: string | null) {
   return new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'short' }).format(new Date(value))
 }
 
-function getWeekMonday(anchor: Date): Date {
-  const current = new Date(anchor)
-  current.setHours(12, 0, 0, 0)
-  const day = getArgentinaWeekdayIndex(current)
-  const diff = day === 0 ? -6 : 1 - day
-  current.setDate(current.getDate() + diff)
-  return current
-}
 
-function capitalize(value: string) {
-  return value.charAt(0).toUpperCase() + value.slice(1)
-}
-
-function formatArgentinaDateKey(value: Date) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: ARGENTINA_TIME_ZONE,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit'
-  }).format(value)
-}
-
-function getArgentinaWeekdayIndex(value: Date) {
-  const weekday = new Intl.DateTimeFormat('en-US', {
-    timeZone: ARGENTINA_TIME_ZONE,
-    weekday: 'short'
-  }).format(value)
-
-  return ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(weekday)
-}
