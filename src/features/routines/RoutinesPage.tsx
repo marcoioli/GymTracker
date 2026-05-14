@@ -84,6 +84,8 @@ export function RoutinesPage() {
 	);
 	const [errorMessage, setErrorMessage] = useState<string | null>(null);
 	const [filter, setFilter] = useState<RoutineFilter>("all");
+	const [weekFilterId, setWeekFilterId] = useState("all");
+	const [dayFilterId, setDayFilterId] = useState("all");
 
 	const routineCards = useMemo(
 		() => (routines ?? []).map(normalizeRoutineRecord),
@@ -102,6 +104,8 @@ export function RoutinesPage() {
 		setFormState(nextFormState);
 		setWeekCountInput("");
 		setDayCountInputs(toDayCountInputs(nextFormState.weeks));
+		setWeekFilterId("all");
+		setDayFilterId("all");
 
 		requestAnimationFrame(() => {
 			document
@@ -115,6 +119,8 @@ export function RoutinesPage() {
 		setFormState(nextFormState);
 		setWeekCountInput(String(nextFormState.weeks.length));
 		setDayCountInputs(toDayCountInputs(nextFormState.weeks));
+		setWeekFilterId("all");
+		setDayFilterId("all");
 
 		requestAnimationFrame(() => {
 			document
@@ -127,6 +133,8 @@ export function RoutinesPage() {
 		setFormState(null);
 		setWeekCountInput("");
 		setDayCountInputs({});
+		setWeekFilterId("all");
+		setDayFilterId("all");
 	}
 
 	async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -448,9 +456,92 @@ export function RoutinesPage() {
 							/>
 						</Field>
 
+						{formState.weeks.length > 0 ? (() => {
+							const weekFilterValid =
+								weekFilterId === "all" ||
+								formState.weeks.some((w) => w.id === weekFilterId);
+							const selectedWeek = weekFilterValid
+								? formState.weeks.find((w) => w.id === weekFilterId) ?? null
+								: null;
+							const dayFilterValid =
+								weekFilterValid &&
+								dayFilterId !== "all" &&
+								(selectedWeek?.days.some((d) => d.id === dayFilterId) ?? false);
+
+							return (
+								<div className="routine-editor-filter">
+									<Field compact label="Filtrar semana">
+										<FieldSelect
+											value={weekFilterValid ? weekFilterId : "all"}
+											onChange={(event) => {
+												setWeekFilterId(event.target.value);
+												setDayFilterId("all");
+											}}
+										>
+											<option value="all">Todas las semanas</option>
+											{formState.weeks.map((w, idx) => (
+												<option key={w.id} value={w.id}>
+													{w.label || `Semana ${idx + 1}`}
+												</option>
+											))}
+										</FieldSelect>
+									</Field>
+									<Field compact label="Filtrar día">
+										<FieldSelect
+											disabled={!weekFilterValid || weekFilterId === "all"}
+											value={dayFilterValid ? dayFilterId : "all"}
+											onChange={(event) =>
+												setDayFilterId(event.target.value)
+											}
+										>
+											<option value="all">Todos los días</option>
+											{selectedWeek?.days.map((d, idx) => (
+												<option key={d.id} value={d.id}>
+													{d.label || `Día ${idx + 1}`}
+												</option>
+											))}
+										</FieldSelect>
+									</Field>
+								</div>
+							);
+						})() : null}
+
 						<div className="week-stack">
-							{formState.weeks.map((week, weekIndex) => (
-								<article className="week-card" key={week.id}>
+							{formState.weeks.map((week, weekIndex) => {
+								const weekFilterValid =
+									weekFilterId === "all" ||
+									formState.weeks.some((w) => w.id === weekFilterId);
+								if (weekFilterValid && weekFilterId !== "all" && week.id !== weekFilterId)
+									return null;
+
+								const activeDayFilter =
+									weekFilterValid &&
+									weekFilterId !== "all" &&
+									dayFilterId !== "all" &&
+									week.days.some((d) => d.id === dayFilterId);
+
+								return (
+									<article className="week-card" key={week.id}>
+									{activeDayFilter ? (
+										<div className="filter-breadcrumb">
+											<span className="filter-breadcrumb__label">
+												Editando: {week.label || `Semana ${weekIndex + 1}`} →{" "}
+												{week.days.find((d) => d.id === dayFilterId)?.label ||
+													`Día ${week.days.findIndex((d) => d.id === dayFilterId) + 1}`}
+											</span>
+											<Button
+												size="compact"
+												variant="ghost"
+												onClick={() => {
+													setWeekFilterId("all");
+													setDayFilterId("all");
+												}}
+											>
+												Ver todo
+											</Button>
+										</div>
+									) : (
+										<>
 									<div className="week-card-header">
 										<Field label="Nombre de la semana">
 											<FieldInput
@@ -585,9 +676,13 @@ export function RoutinesPage() {
 											Vaciar semana
 										</Button>
 									</div>
+									</>
+								)}
 
 									<div className="day-stack">
-										{week.days.map((day, dayIndex) => (
+										{week.days.map((day, dayIndex) => {
+											if (activeDayFilter && day.id !== dayFilterId) return null;
+											return (
 											<article className="day-card" key={day.id}>
 												<Field label="Nombre del día">
 													<FieldInput
@@ -867,10 +962,12 @@ export function RoutinesPage() {
 													Agregar ejercicio
 												</button>
 											</article>
-										))}
+										);
+										})}
 									</div>
 								</article>
-							))}
+							);
+							})}
 						</div>
 
 						{errorMessage ? (

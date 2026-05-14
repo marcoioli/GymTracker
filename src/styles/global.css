@@ -751,6 +751,39 @@ textarea {
   margin-top: 12px;
 }
 
+.routine-editor-filter {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.routine-editor-filter .ui-field {
+  flex: 1 1 180px;
+  min-width: 0;
+}
+
+.filter-breadcrumb {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: rgba(255, 122, 26, 0.08);
+  border: 1px solid rgba(255, 122, 26, 0.15);
+}
+
+.filter-breadcrumb__label {
+  font-weight: 600;
+  color: var(--color-text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .field-group,
 .ui-field {
   display: grid;
