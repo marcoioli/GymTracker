@@ -3124,3 +3124,44 @@ body {
   }
 
 }
+
+/* ── Weight Suggestion Badge ── */
+
+.track-suggestion-badge {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 8px 14px;
+	min-height: 44px;
+	border-radius: 12px;
+	font-size: 0.92rem;
+	font-weight: 600;
+	background: rgba(255, 255, 255, 0.04);
+	border: 1px solid transparent;
+}
+
+.track-suggestion-badge--subir {
+	color: #4ade80;
+	border-color: rgba(74, 222, 128, 0.3);
+	background: rgba(74, 222, 128, 0.08);
+}
+
+.track-suggestion-badge--mantener {
+	color: #60a5fa;
+	border-color: rgba(96, 165, 250, 0.3);
+	background: rgba(96, 165, 250, 0.08);
+}
+
+.track-suggestion-badge--bajar {
+	color: #fbbf24;
+	border-color: rgba(251, 191, 36, 0.3);
+	background: rgba(251, 191, 36, 0.08);
+}
+
+.track-suggestion-badge__icon {
+	font-size: 1.1rem;
+}
+
+.track-suggestion-badge__text {
+	flex: 1;
+}

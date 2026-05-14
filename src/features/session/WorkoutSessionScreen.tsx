@@ -1,6 +1,7 @@
 import {
 	type Dispatch,
 	type SetStateAction,
+	Fragment,
 	useEffect,
 	useMemo,
 	useState,
@@ -10,6 +11,12 @@ import { useLiveQuery } from "dexie-react-hooks";
 
 import { db } from "../../db/database";
 import { parseSessionNumericInput } from "../../domain/sessions";
+import {
+	getWeightSuggestion,
+	resolveEffectiveTargetReps,
+	resolveRirTarget,
+	type WeightSuggestion,
+} from "../../domain/suggestions";
 import {
 	getRoutineDaySelection,
 	normalizeExerciseName,
@@ -32,6 +39,7 @@ import {
 	type PreviousSessionContext,
 	type SessionExerciseInput,
 } from "./sessionRepository";
+import { WeightSuggestionBadge } from "./WeightSuggestionBadge";
 
 type ExerciseDraftState = SessionExerciseInput;
 
@@ -157,6 +165,60 @@ function WorkoutSessionForm({
 			),
 		[exerciseDrafts],
 	);
+	const suggestions = useMemo(() => {
+		const result = new Map<string, WeightSuggestion>();
+		for (let eIdx = 0; eIdx < exerciseDrafts.length; eIdx++) {
+			const exercise = selection.day.exercises[eIdx];
+			const draft = exerciseDrafts[eIdx];
+			if (!exercise || !draft) continue;
+
+			const exerciseTargetRir = exercise.targetRir;
+
+			for (let sIdx = 1; sIdx < draft.sets.length; sIdx++) {
+				const prevSet = draft.sets[sIdx - 1];
+				const nextSet = draft.sets[sIdx];
+
+				// Badge hidden when next set already has input (REQ-13/REQ-9)
+				if (nextSet?.weightKg || nextSet?.reps || nextSet?.actualRir) {
+					continue;
+				}
+
+				const weight = parseSessionNumericInput(prevSet.weightKg);
+				const reps = parseSessionNumericInput(prevSet.reps);
+				const actualRir = parseSessionNumericInput(prevSet.actualRir);
+
+				// All three must be present (REQ-8)
+				if (weight === null || reps === null || actualRir === null) {
+					continue;
+				}
+
+				// setReferences is 0-indexed: [0] = set 1 reference
+				const completedSetIndex = sIdx - 1;
+				const setRef = exercise.setReferences?.[completedSetIndex];
+				const targetRir = resolveRirTarget(
+					setRef?.rirTarget,
+					exerciseTargetRir,
+				);
+
+				// No suggestion when targetRir is null (REQ-10)
+				if (targetRir === null) continue;
+
+				const targetRepsEff = resolveEffectiveTargetReps(setRef?.repsTarget);
+
+				const suggestion = getWeightSuggestion({
+					lastSet: { weightKg: weight, reps, actualRir },
+					targetRepsEff,
+					targetRir,
+				});
+
+				if (suggestion) {
+					result.set(`${eIdx}:${sIdx}`, suggestion);
+				}
+			}
+		}
+		return result;
+	}, [exerciseDrafts, selection]);
+
 	const savingMessage =
 		isSaving === "completed"
 			? "Guardando sesión finalizada..."
@@ -318,80 +380,86 @@ function WorkoutSessionForm({
 
 							<div className="track-set-stack">
 								{exerciseDraft.sets.map((set, setIndex) => (
-									<div
-										className="track-set-grid"
-										key={`${exercise.id}:set-${setIndex + 1}`}
-									>
-										<span className="track-set-grid__index">
-											{setIndex + 1}
-										</span>
-										<span className="track-set-grid__previous">
-											{formatCompactReference(reference, setIndex)}
-										</span>
+									<Fragment key={`${exercise.id}:set-${setIndex + 1}`}>
+										<div className="track-set-grid">
+											<span className="track-set-grid__index">
+												{setIndex + 1}
+											</span>
+											<span className="track-set-grid__previous">
+												{formatCompactReference(reference, setIndex)}
+											</span>
 
-										<input
-											aria-label={`Peso kg serie ${setIndex + 1}`}
-											className="track-set-input"
-											inputMode="decimal"
-											placeholder={getPlannedSetPlaceholder(
-												exercise.setReferences?.[setIndex],
-												"weightTarget",
-											)}
-											type="text"
-											value={set.weightKg ?? ""}
-											onChange={(event) =>
-												updateExerciseDraft(
-													setExerciseDrafts,
-													exerciseIndex,
-													setIndex,
-													"weightKg",
-													event.target.value,
-												)
-											}
-										/>
+											<input
+												aria-label={`Peso kg serie ${setIndex + 1}`}
+												className="track-set-input"
+												inputMode="decimal"
+												placeholder={getPlannedSetPlaceholder(
+													exercise.setReferences?.[setIndex],
+													"weightTarget",
+												)}
+												type="text"
+												value={set.weightKg ?? ""}
+												onChange={(event) =>
+													updateExerciseDraft(
+														setExerciseDrafts,
+														exerciseIndex,
+														setIndex,
+														"weightKg",
+														event.target.value,
+													)
+												}
+											/>
 
-										<input
-											aria-label={`Reps serie ${setIndex + 1}`}
-											className="track-set-input"
-											inputMode="numeric"
-											placeholder={getPlannedSetPlaceholder(
-												exercise.setReferences?.[setIndex],
-												"repsTarget",
-											)}
-											type="text"
-											value={set.reps ?? ""}
-											onChange={(event) =>
-												updateExerciseDraft(
-													setExerciseDrafts,
-													exerciseIndex,
-													setIndex,
-													"reps",
-													event.target.value,
-												)
-											}
-										/>
+											<input
+												aria-label={`Reps serie ${setIndex + 1}`}
+												className="track-set-input"
+												inputMode="numeric"
+												placeholder={getPlannedSetPlaceholder(
+													exercise.setReferences?.[setIndex],
+													"repsTarget",
+												)}
+												type="text"
+												value={set.reps ?? ""}
+												onChange={(event) =>
+													updateExerciseDraft(
+														setExerciseDrafts,
+														exerciseIndex,
+														setIndex,
+														"reps",
+														event.target.value,
+													)
+												}
+											/>
 
-										<input
-											aria-label={`RIR real serie ${setIndex + 1}`}
-											className="track-set-input track-set-input--subtle"
-											inputMode="numeric"
-											placeholder={getPlannedSetPlaceholder(
-												exercise.setReferences?.[setIndex],
-												"rirTarget",
-											)}
-											type="text"
-											value={set.actualRir ?? ""}
-											onChange={(event) =>
-												updateExerciseDraft(
-													setExerciseDrafts,
-													exerciseIndex,
-													setIndex,
-													"actualRir",
-													event.target.value,
-												)
-											}
-										/>
-									</div>
+											<input
+												aria-label={`RIR real serie ${setIndex + 1}`}
+												className="track-set-input track-set-input--subtle"
+												inputMode="numeric"
+												placeholder={getPlannedSetPlaceholder(
+													exercise.setReferences?.[setIndex],
+													"rirTarget",
+												)}
+												type="text"
+												value={set.actualRir ?? ""}
+												onChange={(event) =>
+													updateExerciseDraft(
+														setExerciseDrafts,
+														exerciseIndex,
+														setIndex,
+														"actualRir",
+														event.target.value,
+													)
+												}
+											/>
+										</div>
+										{suggestions.get(`${exerciseIndex}:${setIndex + 1}`) && (
+											<WeightSuggestionBadge
+												suggestion={
+													suggestions.get(`${exerciseIndex}:${setIndex + 1}`)!
+												}
+											/>
+										)}
+									</Fragment>
 								))}
 							</div>
 

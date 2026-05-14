@@ -256,3 +256,113 @@ async function seedRoutine() {
 		updatedAt: "2026-05-05T10:00:00.000Z",
 	});
 }
+
+describe("Weight Suggestion Badge", () => {
+	beforeEach(async () => {
+		mockNavigate.mockReset();
+		vi.restoreAllMocks();
+		await db.routines.clear();
+		await db.sessions.clear();
+	});
+
+	it("IT-1 (SC-23): appears after completing Set 1", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
+
+		renderSessionScreen();
+
+		await screen.findByRole("heading", { name: "Pull" });
+		await user.type(screen.getByLabelText(/peso kg serie 1/i), "25");
+		await user.type(screen.getByLabelText(/reps serie 1/i), "10");
+		await user.type(screen.getByLabelText(/rir real serie 1/i), "1");
+
+		// Badge should appear between sets (after set 1, before set 2)
+		await waitFor(() => {
+			const badge = screen.queryByText(/💡/i);
+			expect(badge).toBeInTheDocument();
+		});
+	});
+
+	it("IT-2 (SC-24): disappears when next set gets input", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
+
+		renderSessionScreen();
+
+		await screen.findByRole("heading", { name: "Pull" });
+
+		// Complete Set 1
+		await user.type(screen.getByLabelText(/peso kg serie 1/i), "25");
+		await user.type(screen.getByLabelText(/reps serie 1/i), "10");
+		await user.type(screen.getByLabelText(/rir real serie 1/i), "1");
+
+		// Badge should be visible
+		await waitFor(() => {
+			expect(screen.queryByText(/💡/i)).toBeInTheDocument();
+		});
+
+		// Start typing in Set 2 — badge should disappear
+		await user.type(screen.getByLabelText(/peso kg serie 2/i), "2");
+
+		await waitFor(() => {
+			expect(screen.queryByText(/💡/i)).not.toBeInTheDocument();
+		});
+	});
+
+	it("IT-3 (SC-25): no badge before any set is logged", async () => {
+		await seedRoutine();
+
+		renderSessionScreen();
+
+		// No badge should appear before first set is logged
+		expect(screen.queryByText(/💡/i)).not.toBeInTheDocument();
+	});
+
+	it("IT-4 (SC-26): no badge after last set", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
+
+		renderSessionScreen();
+
+		await screen.findByRole("heading", { name: "Pull" });
+
+		// Complete Set 1 — badge should appear between sets
+		await user.type(screen.getByLabelText(/peso kg serie 1/i), "25");
+		await user.type(screen.getByLabelText(/reps serie 1/i), "10");
+		await user.type(screen.getByLabelText(/rir real serie 1/i), "1");
+
+		await waitFor(() => {
+			expect(screen.queryByText(/💡/i)).toBeInTheDocument();
+		});
+
+		// Complete Set 2 (last set) — badge should disappear and not reappear
+		await user.type(screen.getByLabelText(/peso kg serie 2/i), "20");
+		await user.type(screen.getByLabelText(/reps serie 2/i), "12");
+		await user.type(screen.getByLabelText(/rir real serie 2/i), "1");
+
+		// No badge at all — last set has no suggestion
+		expect(screen.queryByText(/💡/i)).not.toBeInTheDocument();
+	});
+
+	it("IT-5 (SC-27): Set 2 inputs remain empty when badge is shown", async () => {
+		const user = userEvent.setup();
+		await seedRoutine();
+
+		renderSessionScreen();
+
+		await screen.findByRole("heading", { name: "Pull" });
+		await user.type(screen.getByLabelText(/peso kg serie 1/i), "25");
+		await user.type(screen.getByLabelText(/reps serie 1/i), "10");
+		await user.type(screen.getByLabelText(/rir real serie 1/i), "1");
+
+		// Badge should be visible
+		await waitFor(() => {
+			expect(screen.queryByText(/💡/i)).toBeInTheDocument();
+		});
+
+		// Set 2 inputs should still be empty (no pre-fill)
+		expect(screen.getByLabelText(/peso kg serie 2/i)).toHaveValue("");
+		expect(screen.getByLabelText(/reps serie 2/i)).toHaveValue("");
+		expect(screen.getByLabelText(/rir real serie 2/i)).toHaveValue("");
+	});
+});
