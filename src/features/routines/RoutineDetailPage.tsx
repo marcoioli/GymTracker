@@ -8,7 +8,7 @@ import type {
 	RoutineExercise,
 	RoutineWeek,
 } from "../../domain/routines";
-import { Button, Card, EmptyState, PageSection } from "../../shared/ui";
+import { Button, Card, EmptyState, PageSection, StatusBanner } from "../../shared/ui";
 
 export function RoutineDetailPage() {
 	const { routineId = "" } = useParams();
@@ -26,7 +26,9 @@ export function RoutineDetailPage() {
 				eyebrow="Rutinas"
 				title="Cargando detalle"
 				titleId="routine-detail-loading-title"
-			/>
+			>
+				<StatusBanner tone="info">Cargando datos de la rutina...</StatusBanner>
+			</PageSection>
 		);
 	}
 
