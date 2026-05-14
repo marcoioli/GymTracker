@@ -1005,19 +1005,19 @@ export function RoutinesPage() {
 							})}
 						</div>
 
-					<div className="routine-form-sticky-bar">
-						{errorMessage ? (
-							<StatusBanner tone="error">{errorMessage}</StatusBanner>
-						) : null}
+				{errorMessage ? (
+					<StatusBanner tone="error">{errorMessage}</StatusBanner>
+				) : null}
 
-						<Button disabled={isSaving} fullWidth size="touch" type="submit">
-							{isSaving
-								? "Guardando..."
-								: formState.id
-									? "Guardar cambios"
-									: "Guardar rutina"}
-						</Button>
-					</div>
+				<div className="routine-form-sticky-bar">
+					<Button disabled={isSaving} fullWidth size="touch" type="submit">
+						{isSaving
+							? "Guardando..."
+							: formState.id
+								? "Guardar cambios"
+								: "Guardar rutina"}
+					</Button>
+				</div>
 					</form>
 
 					<datalist id="exercise-catalog-options">
