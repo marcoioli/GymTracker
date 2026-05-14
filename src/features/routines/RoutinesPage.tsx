@@ -456,62 +456,70 @@ export function RoutinesPage() {
 							/>
 						</Field>
 
-						{formState.weeks.length > 0 ? (() => {
-							const weekFilterValid =
-								weekFilterId === "all" ||
-								formState.weeks.some((w) => w.id === weekFilterId);
-							const selectedWeek = weekFilterValid
-								? formState.weeks.find((w) => w.id === weekFilterId) ?? null
-								: null;
-							const dayFilterValid =
-								weekFilterValid &&
-								dayFilterId !== "all" &&
-								(selectedWeek?.days.some((d) => d.id === dayFilterId) ?? false);
+						{formState.weeks.length > 0
+							? (() => {
+									const weekFilterValid =
+										weekFilterId === "all" ||
+										formState.weeks.some((w) => w.id === weekFilterId);
+									const selectedWeek = weekFilterValid
+										? (formState.weeks.find((w) => w.id === weekFilterId) ??
+											null)
+										: null;
+									const dayFilterValid =
+										weekFilterValid &&
+										dayFilterId !== "all" &&
+										(selectedWeek?.days.some((d) => d.id === dayFilterId) ??
+											false);
 
-							return (
-								<div className="routine-editor-filter">
-									<Field compact label="Filtrar semana">
-										<FieldSelect
-											value={weekFilterValid ? weekFilterId : "all"}
-											onChange={(event) => {
-												setWeekFilterId(event.target.value);
-												setDayFilterId("all");
-											}}
-										>
-											<option value="all">Todas las semanas</option>
-											{formState.weeks.map((w, idx) => (
-												<option key={w.id} value={w.id}>
-													{w.label || `Semana ${idx + 1}`}
-												</option>
-											))}
-										</FieldSelect>
-									</Field>
-									<Field compact label="Filtrar día">
-										<FieldSelect
-											disabled={!weekFilterValid || weekFilterId === "all"}
-											value={dayFilterValid ? dayFilterId : "all"}
-											onChange={(event) =>
-												setDayFilterId(event.target.value)
-											}
-										>
-											<option value="all">Todos los días</option>
-											{selectedWeek?.days.map((d, idx) => (
-												<option key={d.id} value={d.id}>
-													{d.label || `Día ${idx + 1}`}
-												</option>
-											))}
-										</FieldSelect>
-									</Field>
-								</div>
-							);
-						})() : null}
+									return (
+										<div className="routine-editor-filter">
+											<Field compact label="Filtrar semana">
+												<FieldSelect
+													value={weekFilterValid ? weekFilterId : "all"}
+													onChange={(event) => {
+														setWeekFilterId(event.target.value);
+														setDayFilterId("all");
+													}}
+												>
+													<option value="all">Todas las semanas</option>
+													{formState.weeks.map((w, idx) => (
+														<option key={w.id} value={w.id}>
+															{w.label || `Semana ${idx + 1}`}
+														</option>
+													))}
+												</FieldSelect>
+											</Field>
+											<Field compact label="Filtrar día">
+												<FieldSelect
+													disabled={!weekFilterValid || weekFilterId === "all"}
+													value={dayFilterValid ? dayFilterId : "all"}
+													onChange={(event) =>
+														setDayFilterId(event.target.value)
+													}
+												>
+													<option value="all">Todos los días</option>
+													{selectedWeek?.days.map((d, idx) => (
+														<option key={d.id} value={d.id}>
+															{d.label || `Día ${idx + 1}`}
+														</option>
+													))}
+												</FieldSelect>
+											</Field>
+										</div>
+									);
+								})()
+							: null}
 
 						<div className="week-stack">
 							{formState.weeks.map((week, weekIndex) => {
 								const weekFilterValid =
 									weekFilterId === "all" ||
 									formState.weeks.some((w) => w.id === weekFilterId);
-								if (weekFilterValid && weekFilterId !== "all" && week.id !== weekFilterId)
+								if (
+									weekFilterValid &&
+									weekFilterId !== "all" &&
+									week.id !== weekFilterId
+								)
 									return null;
 
 								const activeDayFilter =
@@ -522,451 +530,471 @@ export function RoutinesPage() {
 
 								return (
 									<article className="week-card" key={week.id}>
-									{activeDayFilter ? (
-										<div className="filter-breadcrumb">
-											<span className="filter-breadcrumb__label">
-												Editando: {week.label || `Semana ${weekIndex + 1}`} →{" "}
-												{week.days.find((d) => d.id === dayFilterId)?.label ||
-													`Día ${week.days.findIndex((d) => d.id === dayFilterId) + 1}`}
-											</span>
-											<Button
-												size="compact"
-												variant="ghost"
-												onClick={() => {
-													setWeekFilterId("all");
-													setDayFilterId("all");
-												}}
-											>
-												Ver todo
-											</Button>
-										</div>
-									) : (
-										<>
-									<div className="week-card-header">
-										<Field label="Nombre de la semana">
-											<FieldInput
-												type="text"
-												value={week.label}
-												onChange={(event) => {
-													updateFormState(setFormState, (current) => ({
-														...current,
-														weeks: current.weeks.map((currentWeek) =>
-															currentWeek.id === week.id
-																? { ...currentWeek, label: event.target.value }
-																: currentWeek,
-														),
-													}));
-												}}
-											/>
-										</Field>
-
-										<Field compact label="Días">
-											<FieldInput
-												min={1}
-												type="number"
-												value={
-													dayCountInputs[week.id] ??
-													(week.days.length === 0
-														? ""
-														: String(week.days.length))
-												}
-												onBlur={() => {
-													setDayCountInputs((current) => ({
-														...current,
-														[week.id]:
-															week.days.length === 0
-																? ""
-																: String(week.days.length),
-													}));
-												}}
-												onChange={(event) => {
-													const nextValue = event.target.value;
-													setDayCountInputs((current) => ({
-														...current,
-														[week.id]: nextValue,
-													}));
-
-													if (nextValue.trim() === "") {
-														return;
-													}
-
-													updateFormState(setFormState, (current) => ({
-														...current,
-														weeks: current.weeks.map((currentWeek) => {
-															if (currentWeek.id !== week.id) {
-																return currentWeek;
-															}
-
-															const nextDays = resolveWeekDaysFromCountInput(
-																currentWeek.days,
-																nextValue,
-																currentWeek.label,
-															);
-
-															if (nextDays === currentWeek.days) {
-																return currentWeek;
-															}
-
-															setDayCountInputs((inputs) => ({
-																...inputs,
-																[week.id]:
-																	nextDays.length === 0
-																		? ""
-																		: String(nextDays.length),
-															}));
-
-															return { ...currentWeek, days: nextDays };
-														}),
-													}));
-												}}
-											/>
-										</Field>
-									</div>
-
-									<div className="week-card-tools">
-										{weekIndex > 0 ? (
-											<Button
-												size="compact"
-												variant="secondary"
-												onClick={() => {
-													updateFormState(setFormState, (current) => {
-														const nextWeeks = repeatWeekFromPrevious(
-															current.weeks,
-															weekIndex,
-														);
-														setDayCountInputs(toDayCountInputs(nextWeeks));
-														return {
-															...current,
-															weeks: nextWeeks,
-														};
-													});
-												}}
-											>
-												Repetir semana anterior
-											</Button>
-										) : null}
-
-										<Button
-											size="compact"
-											variant="danger"
-											onClick={() => {
-												if (
-													week.days.length === 0 ||
-													!window.confirm(
-														`¿Vaciar ${week.label || `semana ${weekIndex + 1}`} y borrar todos sus días?`,
-													)
-												) {
-													return;
-												}
-
-												updateFormState(setFormState, (current) => {
-													const nextWeeks = current.weeks.map((currentWeek) =>
-														currentWeek.id === week.id
-															? { ...currentWeek, days: [] }
-															: currentWeek,
-													);
-													setDayCountInputs(toDayCountInputs(nextWeeks));
-													return {
-														...current,
-														weeks: nextWeeks,
-													};
-												});
-											}}
-										>
-											Vaciar semana
-										</Button>
-									</div>
-									</>
-								)}
-
-									<div className="day-stack">
-										{week.days.map((day, dayIndex) => {
-											if (activeDayFilter && day.id !== dayFilterId) return null;
-											return (
-											<article className="day-card" key={day.id}>
-												<Field label="Nombre del día">
-													<FieldInput
-														placeholder={`Día ${dayIndex + 1}`}
-														type="text"
-														value={day.label}
-														onChange={(event) => {
-															updateFormState(setFormState, (current) => ({
-																...current,
-																weeks: updateDay(
-																	current.weeks,
-																	week.id,
-																	day.id,
-																	{ label: event.target.value },
-																),
-															}));
-														}}
-													/>
-												</Field>
-
-												<div className="exercise-stack">
-													{day.exercises.length === 0 ? (
-														<EmptyState
-															description="Agregá al menos un ejercicio para que este día se vuelva entrenable y no quede como estructura vacía."
-															title="Todavía no hay ejercicios en este día"
+										{activeDayFilter ? (
+											<div className="filter-breadcrumb">
+												<span className="filter-breadcrumb__label">
+													Editando: {week.label || `Semana ${weekIndex + 1}`} →{" "}
+													{week.days.find((d) => d.id === dayFilterId)?.label ||
+														`Día ${week.days.findIndex((d) => d.id === dayFilterId) + 1}`}
+												</span>
+												<Button
+													size="compact"
+													variant="ghost"
+													onClick={() => {
+														setWeekFilterId("all");
+														setDayFilterId("all");
+													}}
+												>
+													Ver todo
+												</Button>
+											</div>
+										) : (
+											<>
+												<div className="week-card-header">
+													<Field label="Nombre de la semana">
+														<FieldInput
+															type="text"
+															value={week.label}
+															onChange={(event) => {
+																updateFormState(setFormState, (current) => ({
+																	...current,
+																	weeks: current.weeks.map((currentWeek) =>
+																		currentWeek.id === week.id
+																			? {
+																					...currentWeek,
+																					label: event.target.value,
+																				}
+																			: currentWeek,
+																	),
+																}));
+															}}
 														/>
+													</Field>
+
+													<Field compact label="Días">
+														<FieldInput
+															min={1}
+															type="number"
+															value={
+																dayCountInputs[week.id] ??
+																(week.days.length === 0
+																	? ""
+																	: String(week.days.length))
+															}
+															onBlur={() => {
+																setDayCountInputs((current) => ({
+																	...current,
+																	[week.id]:
+																		week.days.length === 0
+																			? ""
+																			: String(week.days.length),
+																}));
+															}}
+															onChange={(event) => {
+																const nextValue = event.target.value;
+																setDayCountInputs((current) => ({
+																	...current,
+																	[week.id]: nextValue,
+																}));
+
+																if (nextValue.trim() === "") {
+																	return;
+																}
+
+																updateFormState(setFormState, (current) => ({
+																	...current,
+																	weeks: current.weeks.map((currentWeek) => {
+																		if (currentWeek.id !== week.id) {
+																			return currentWeek;
+																		}
+
+																		const nextDays =
+																			resolveWeekDaysFromCountInput(
+																				currentWeek.days,
+																				nextValue,
+																				currentWeek.label,
+																			);
+
+																		if (nextDays === currentWeek.days) {
+																			return currentWeek;
+																		}
+
+																		setDayCountInputs((inputs) => ({
+																			...inputs,
+																			[week.id]:
+																				nextDays.length === 0
+																					? ""
+																					: String(nextDays.length),
+																		}));
+
+																		return { ...currentWeek, days: nextDays };
+																	}),
+																}));
+															}}
+														/>
+													</Field>
+												</div>
+
+												<div className="week-card-tools">
+													{weekIndex > 0 ? (
+														<Button
+															size="compact"
+															variant="secondary"
+															onClick={() => {
+																updateFormState(setFormState, (current) => {
+																	const nextWeeks = repeatWeekFromPrevious(
+																		current.weeks,
+																		weekIndex,
+																	);
+																	setDayCountInputs(
+																		toDayCountInputs(nextWeeks),
+																	);
+																	return {
+																		...current,
+																		weeks: nextWeeks,
+																	};
+																});
+															}}
+														>
+															Repetir semana anterior
+														</Button>
 													) : null}
 
-													{day.exercises.map((exercise, exerciseIndex) => (
-														<div
-															className="routine-exercise-planner"
-															key={exercise.id}
-														>
-															<div className="routine-exercise-planner__top">
-																<Field
-																	className="exercise-row__name"
-																	label="Ejercicio"
-																>
-																	<FieldInput
-																		list="exercise-catalog-options"
-																		placeholder="Ej: Sentadilla frontal"
-																		type="text"
-																		value={exercise.name}
-																		onChange={(event) => {
-																			updateFormState(
-																				setFormState,
-																				(current) => ({
-																					...current,
-																					weeks: updateExercise(
-																						current.weeks,
-																						week.id,
-																						day.id,
-																						exercise.id,
-																						{
-																							name: event.target.value,
-																						},
-																					),
-																				}),
-																			);
-																		}}
-																	/>
-																</Field>
+													<Button
+														size="compact"
+														variant="danger"
+														onClick={() => {
+															if (
+																week.days.length === 0 ||
+																!window.confirm(
+																	`¿Vaciar ${week.label || `semana ${weekIndex + 1}`} y borrar todos sus días?`,
+																)
+															) {
+																return;
+															}
 
-																<Field
-																	compact
-																	hint="Obligatorio para el resumen semanal."
-																	label="Grupo muscular"
-																>
-																	<FieldSelect
-																		required
-																		value={exercise.muscle}
-																		onChange={(event) => {
-																			updateFormState(
-																				setFormState,
-																				(current) => ({
-																					...current,
-																					weeks: updateExercise(
-																						current.weeks,
-																						week.id,
-																						day.id,
-																						exercise.id,
-																						{
-																							muscle: event.target
-																								.value as RoutineExercise["muscle"],
-																						},
-																					),
-																				}),
-																			);
-																		}}
-																	>
-																		{MUSCLE_GROUPS.map((muscle) => (
-																			<option key={muscle} value={muscle}>
-																				{muscle}
-																			</option>
-																		))}
-																	</FieldSelect>
-																</Field>
-															</div>
+															updateFormState(setFormState, (current) => {
+																const nextWeeks = current.weeks.map(
+																	(currentWeek) =>
+																		currentWeek.id === week.id
+																			? { ...currentWeek, days: [] }
+																			: currentWeek,
+																);
+																setDayCountInputs(toDayCountInputs(nextWeeks));
+																return {
+																	...current,
+																	weeks: nextWeeks,
+																};
+															});
+														}}
+													>
+														Vaciar semana
+													</Button>
+												</div>
+											</>
+										)}
 
-															<div className="routine-exercise-planner__summary">
-																<strong>
-																	{exercise.name.trim() ||
-																		`Ejercicio ${exerciseIndex + 1}`}
-																</strong>
-																<span>
-																	Referencia por serie para planificar la
-																	rutina. No afecta el tracking real.
-																</span>
-															</div>
+										<div className="day-stack">
+											{week.days.map((day, dayIndex) => {
+												if (activeDayFilter && day.id !== dayFilterId)
+													return null;
+												return (
+													<article className="day-card" key={day.id}>
+														<Field label="Nombre del día">
+															<FieldInput
+																placeholder={`Día ${dayIndex + 1}`}
+																type="text"
+																value={day.label}
+																onChange={(event) => {
+																	updateFormState(setFormState, (current) => ({
+																		...current,
+																		weeks: updateDay(
+																			current.weeks,
+																			week.id,
+																			day.id,
+																			{ label: event.target.value },
+																		),
+																	}));
+																}}
+															/>
+														</Field>
 
-															<div
-																className="routine-series-planner"
-																aria-label={`Planificación de series para ${exercise.name || `ejercicio ${exerciseIndex + 1}`}`}
-															>
+														<div className="exercise-stack">
+															{day.exercises.length === 0 ? (
+																<EmptyState
+																	description="Agregá al menos un ejercicio para que este día se vuelva entrenable y no quede como estructura vacía."
+																	title="Todavía no hay ejercicios en este día"
+																/>
+															) : null}
+
+															{day.exercises.map((exercise, exerciseIndex) => (
 																<div
-																	className="routine-series-planner__head"
-																	aria-hidden="true"
+																	className="routine-exercise-planner"
+																	key={exercise.id}
 																>
-																	<span>Set</span>
-																	<span>Repeticiones</span>
-																	<span>RIR</span>
-																	<span />
-																</div>
-
-																{(exercise.setReferences ?? []).map(
-																	(setReference, setIndex) => (
-																		<div
-																			className="routine-series-planner__row"
-																			key={setReference.id}
+																	<div className="routine-exercise-planner__top">
+																		<Field
+																			className="exercise-row__name"
+																			label="Ejercicio"
 																		>
-																			<span className="routine-series-planner__index">
-																				{setIndex + 1}
-																			</span>
-
-																			<input
-																				aria-label={`Repeticiones objetivo serie ${setIndex + 1}`}
-																				className="track-set-input track-set-input--routine"
-																				placeholder="8-12"
+																			<FieldInput
+																				list="exercise-catalog-options"
+																				placeholder="Ej: Sentadilla frontal"
 																				type="text"
-																				value={setReference.repsTarget}
+																				value={exercise.name}
 																				onChange={(event) => {
 																					updateFormState(
 																						setFormState,
 																						(current) => ({
 																							...current,
-																							weeks: updateExerciseSetReference(
+																							weeks: updateExercise(
 																								current.weeks,
 																								week.id,
 																								day.id,
 																								exercise.id,
-																								setReference.id,
 																								{
-																									repsTarget:
-																										event.target.value,
+																									name: event.target.value,
 																								},
 																							),
 																						}),
 																					);
 																				}}
 																			/>
+																		</Field>
 
-																			<input
-																				aria-label={`RIR objetivo serie ${setIndex + 1}`}
-																				className="track-set-input track-set-input--routine"
-																				inputMode="text"
-																				placeholder="1-2"
-																				type="text"
-																				value={setReference.rirTarget}
+																		<Field
+																			compact
+																			hint="Obligatorio para el resumen semanal."
+																			label="Grupo muscular"
+																		>
+																			<FieldSelect
+																				required
+																				value={exercise.muscle}
 																				onChange={(event) => {
 																					updateFormState(
 																						setFormState,
 																						(current) => ({
 																							...current,
-																							weeks: updateExerciseSetReference(
+																							weeks: updateExercise(
 																								current.weeks,
 																								week.id,
 																								day.id,
 																								exercise.id,
-																								setReference.id,
 																								{
-																									rirTarget: event.target.value,
+																									muscle: event.target
+																										.value as RoutineExercise["muscle"],
 																								},
-																							),
-																						}),
-																					);
-																				}}
-																			/>
-
-																			<button
-																				aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
-																				className="routine-series-planner__remove"
-																				disabled={exercise.targetSets <= 1}
-																				type="button"
-																				onClick={() => {
-																					updateFormState(
-																						setFormState,
-																						(current) => ({
-																							...current,
-																							weeks: removeExerciseSetReference(
-																								current.weeks,
-																								week.id,
-																								day.id,
-																								exercise.id,
-																								setReference.id,
 																							),
 																						}),
 																					);
 																				}}
 																			>
-																				−
-																			</button>
+																				{MUSCLE_GROUPS.map((muscle) => (
+																					<option key={muscle} value={muscle}>
+																						{muscle}
+																					</option>
+																				))}
+																			</FieldSelect>
+																		</Field>
+																	</div>
+
+																	<div className="routine-exercise-planner__summary">
+																		<strong>
+																			{exercise.name.trim() ||
+																				`Ejercicio ${exerciseIndex + 1}`}
+																		</strong>
+																		<span>
+																			Referencia por serie para planificar la
+																			rutina. No afecta el tracking real.
+																		</span>
+																	</div>
+
+																	<div
+																		className="routine-series-planner"
+																		aria-label={`Planificación de series para ${exercise.name || `ejercicio ${exerciseIndex + 1}`}`}
+																	>
+																		<div
+																			className="routine-series-planner__head"
+																			aria-hidden="true"
+																		>
+																			<span>Set</span>
+																			<span>Repeticiones</span>
+																			<span>RIR</span>
+																			<span />
 																		</div>
-																	),
-																)}
-															</div>
 
-															<div className="routine-exercise-planner__actions">
-																<button
-																	className="routine-exercise-planner__add-set"
-																	type="button"
-																	onClick={() => {
-																		updateFormState(
-																			setFormState,
-																			(current) => ({
-																				...current,
-																				weeks: addExerciseSetReference(
-																					current.weeks,
-																					week.id,
-																					day.id,
-																					exercise.id,
-																				),
-																			}),
-																		);
-																	}}
-																>
-																	Agregar serie
-																</button>
+																		{(exercise.setReferences ?? []).map(
+																			(setReference, setIndex) => (
+																				<div
+																					className="routine-series-planner__row"
+																					key={setReference.id}
+																				>
+																					<span className="routine-series-planner__index">
+																						{setIndex + 1}
+																					</span>
 
-																<button
-																	aria-label={`Eliminar ejercicio ${exerciseIndex + 1}`}
-																	className="routine-exercise-planner__remove-exercise"
-																	type="button"
-																	onClick={() => {
-																		updateFormState(
-																			setFormState,
-																			(current) => ({
-																				...current,
-																				weeks: removeExercise(
-																					current.weeks,
-																					week.id,
-																					day.id,
-																					exercise.id,
-																				),
-																			}),
-																		);
-																	}}
-																>
-																	Quitar ejercicio
-																</button>
-															</div>
+																					<input
+																						aria-label={`Repeticiones objetivo serie ${setIndex + 1}`}
+																						className="track-set-input track-set-input--routine"
+																						placeholder="8-12"
+																						type="text"
+																						value={setReference.repsTarget}
+																						onChange={(event) => {
+																							updateFormState(
+																								setFormState,
+																								(current) => ({
+																									...current,
+																									weeks:
+																										updateExerciseSetReference(
+																											current.weeks,
+																											week.id,
+																											day.id,
+																											exercise.id,
+																											setReference.id,
+																											{
+																												repsTarget:
+																													event.target.value,
+																											},
+																										),
+																								}),
+																							);
+																						}}
+																					/>
+
+																					<input
+																						aria-label={`RIR objetivo serie ${setIndex + 1}`}
+																						className="track-set-input track-set-input--routine"
+																						inputMode="text"
+																						placeholder="1-2"
+																						type="text"
+																						value={setReference.rirTarget}
+																						onChange={(event) => {
+																							updateFormState(
+																								setFormState,
+																								(current) => ({
+																									...current,
+																									weeks:
+																										updateExerciseSetReference(
+																											current.weeks,
+																											week.id,
+																											day.id,
+																											exercise.id,
+																											setReference.id,
+																											{
+																												rirTarget:
+																													event.target.value,
+																											},
+																										),
+																								}),
+																							);
+																						}}
+																					/>
+
+																					<button
+																						aria-label={`Quitar serie ${setIndex + 1} del ejercicio ${exerciseIndex + 1}`}
+																						className="routine-series-planner__remove"
+																						disabled={exercise.targetSets <= 1}
+																						type="button"
+																						onClick={() => {
+																							updateFormState(
+																								setFormState,
+																								(current) => ({
+																									...current,
+																									weeks:
+																										removeExerciseSetReference(
+																											current.weeks,
+																											week.id,
+																											day.id,
+																											exercise.id,
+																											setReference.id,
+																										),
+																								}),
+																							);
+																						}}
+																					>
+																						−
+																					</button>
+																				</div>
+																			),
+																		)}
+																	</div>
+
+																	<div className="routine-exercise-planner__actions">
+																		<button
+																			className="routine-exercise-planner__add-set"
+																			type="button"
+																			onClick={() => {
+																				updateFormState(
+																					setFormState,
+																					(current) => ({
+																						...current,
+																						weeks: addExerciseSetReference(
+																							current.weeks,
+																							week.id,
+																							day.id,
+																							exercise.id,
+																						),
+																					}),
+																				);
+																			}}
+																		>
+																			Agregar serie
+																		</button>
+
+																		<button
+																			aria-label={`Eliminar ejercicio ${exerciseIndex + 1}`}
+																			className="routine-exercise-planner__remove-exercise"
+																			type="button"
+																			onClick={() => {
+																				updateFormState(
+																					setFormState,
+																					(current) => ({
+																						...current,
+																						weeks: removeExercise(
+																							current.weeks,
+																							week.id,
+																							day.id,
+																							exercise.id,
+																						),
+																					}),
+																				);
+																			}}
+																		>
+																			Quitar ejercicio
+																		</button>
+																	</div>
+																</div>
+															))}
 														</div>
-													))}
-												</div>
 
-												<button
-													className="secondary-button"
-													type="button"
-													onClick={() => {
-														updateFormState(setFormState, (current) => ({
-															...current,
-															weeks: updateDay(current.weeks, week.id, day.id, {
-																exercises: [...day.exercises, createExercise()],
-															}),
-														}));
-													}}
-												>
-													Agregar ejercicio
-												</button>
-											</article>
-										);
-										})}
-									</div>
-								</article>
-							);
+														<button
+															className="secondary-button"
+															type="button"
+															onClick={() => {
+																updateFormState(setFormState, (current) => ({
+																	...current,
+																	weeks: updateDay(
+																		current.weeks,
+																		week.id,
+																		day.id,
+																		{
+																			exercises: [
+																				...day.exercises,
+																				createExercise(),
+																			],
+																		},
+																	),
+																}));
+															}}
+														>
+															Agregar ejercicio
+														</button>
+													</article>
+												);
+											})}
+										</div>
+									</article>
+								);
 							})}
 						</div>
 
