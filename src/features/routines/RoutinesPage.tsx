@@ -102,6 +102,12 @@ export function RoutinesPage() {
 		setFormState(nextFormState);
 		setWeekCountInput("");
 		setDayCountInputs(toDayCountInputs(nextFormState.weeks));
+
+		requestAnimationFrame(() => {
+			document
+				.getElementById("routine-form-title")
+				?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+		});
 	}
 
 	function openEditRoutineForm(routine: Routine) {
@@ -109,6 +115,12 @@ export function RoutinesPage() {
 		setFormState(nextFormState);
 		setWeekCountInput(String(nextFormState.weeks.length));
 		setDayCountInputs(toDayCountInputs(nextFormState.weeks));
+
+		requestAnimationFrame(() => {
+			document
+				.getElementById("routine-form-title")
+				?.scrollIntoView?.({ behavior: "smooth", block: "start" });
+		});
 	}
 
 	function closeRoutineForm() {

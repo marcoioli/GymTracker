@@ -131,7 +131,6 @@ export function HistoryPage() {
               <div className="stats-inline-grid stats-inline-grid--wide">
                 <StatInline label="Entrenamientos" value={`${summary.sessionCount}`} />
                 <StatInline label="Duración total" value={summary.totalDuration} />
-                <StatInline label="Volumen" value={summary.totalVolume} />
               </div>
             </Card>
 
