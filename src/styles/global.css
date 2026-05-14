@@ -861,8 +861,11 @@ textarea {
 
 .routine-form-sticky-bar {
 	position: sticky;
-	bottom: calc(80px + env(safe-area-inset-bottom));
+	bottom: calc(104px + env(safe-area-inset-bottom));
 	z-index: 10;
+	max-width: 520px;
+	margin-inline: auto;
+	width: 100%;
 }
 
 .field-group,
