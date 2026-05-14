@@ -868,10 +868,6 @@ textarea {
 	width: 100%;
 }
 
-.routine-form-sticky-bar .cta-button {
-	box-shadow: none;
-}
-
 .field-group,
 .ui-field {
 	display: grid;
