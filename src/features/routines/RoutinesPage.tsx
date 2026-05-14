@@ -1005,6 +1005,7 @@ export function RoutinesPage() {
 							})}
 						</div>
 
+					<div className="routine-form-sticky-bar">
 						{errorMessage ? (
 							<StatusBanner tone="error">{errorMessage}</StatusBanner>
 						) : null}
@@ -1016,6 +1017,7 @@ export function RoutinesPage() {
 									? "Guardar cambios"
 									: "Guardar rutina"}
 						</Button>
+					</div>
 					</form>
 
 					<datalist id="exercise-catalog-options">
