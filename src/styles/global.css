@@ -3411,3 +3411,82 @@ body {
 .track-suggestion-badge__text {
 	flex: 1;
 }
+
+/* ── Routine Detail Page ── */
+
+.routine-detail-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 16px;
+}
+
+.routine-detail-week-card {
+	padding: 20px;
+}
+
+.routine-detail-week-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	margin-bottom: 12px;
+}
+
+.routine-detail-days-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.routine-detail-day-card {
+	background: rgba(255, 255, 255, 0.03);
+	border-radius: 12px;
+	padding: 16px;
+}
+
+.routine-detail-day-header {
+	margin-bottom: 10px;
+}
+
+.routine-detail-exercise-stack {
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+}
+
+.routine-detail-exercise-card {
+	background: rgba(255, 255, 255, 0.02);
+	border-radius: 10px;
+	padding: 12px 14px;
+}
+
+.routine-detail-exercise-header {
+	margin-bottom: 8px;
+}
+
+.routine-detail-set-table {
+	margin-top: 6px;
+}
+
+.routine-detail-set-grid {
+	display: grid;
+	grid-template-columns: 40px 1fr 1fr 1fr;
+	gap: 8px;
+	padding: 6px 0;
+	font-size: 0.9rem;
+	align-items: center;
+}
+
+.routine-detail-set-grid--head {
+	font-size: 0.78rem;
+	font-weight: 600;
+	text-transform: uppercase;
+	letter-spacing: 0.04em;
+	color: rgba(255, 255, 255, 0.45);
+	border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+	padding-bottom: 8px;
+}
+
+.routine-detail-set-grid__index {
+	color: rgba(255, 255, 255, 0.4);
+	font-weight: 600;
+}

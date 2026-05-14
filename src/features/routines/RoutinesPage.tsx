@@ -290,6 +290,13 @@ export function RoutinesPage() {
 										<Button
 											size="compact"
 											variant="ghost"
+											onClick={() => navigate(`/routines/${routine.id}`)}
+										>
+											Ver
+										</Button>
+										<Button
+											size="compact"
+											variant="ghost"
 											onClick={() => openEditRoutineForm(routine)}
 										>
 											Editar
