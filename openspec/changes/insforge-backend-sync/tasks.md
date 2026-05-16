@@ -23,7 +23,7 @@ Decision needed before apply: No
 Chained PRs recommended: Yes
 Chain strategy: stacked-to-main
 400-line budget risk: High
-Resolved delivery path: auto-chain, forced chained PRs, current slice PR 0.1 only
+Resolved delivery path: auto-chain, forced chained PRs, current slice PR 1.1 only
 Chained PRs required: Yes
 Chain strategy detail: forced chained PRs
 400-line budget risk detail: Certain
@@ -80,12 +80,12 @@ Implementation must be split before apply.
 
 **Tasks:**
 
-1.1 Install `@insforge/sdk@latest`.
-1.2 Add `.env.example` with `VITE_INSFORGE_URL` and `VITE_INSFORGE_ANON_KEY`.
-1.3 Ensure `.env`, `.env.local`, `.env*.local`, and `.insforge/` remain ignored.
-1.4 Implement a small client factory reading only Vite public env vars.
-1.5 Add tests for missing env behavior and no admin/API key usage.
-1.6 Add a validation step proving `.insforge/project.json` is ignored and absent from staged files.
+- [x] 1.1 Install `@insforge/sdk@latest`.
+- [x] 1.2 Add `.env.example` with `VITE_INSFORGE_URL` and `VITE_INSFORGE_ANON_KEY`.
+- [x] 1.3 Ensure `.env`, `.env.local`, `.env*.local`, and `.insforge/` remain ignored.
+- [x] 1.4 Implement a small client factory reading only Vite public env vars.
+- [x] 1.5 Add tests for missing env behavior and no admin/API key usage.
+- [x] 1.6 Add a validation step proving `.insforge/project.json` is ignored and absent from staged files.
 
 **Validation:**
 
