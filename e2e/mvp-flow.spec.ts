@@ -51,7 +51,7 @@ test('completa el flujo principal del MVP para demo local', async ({ page }) => 
   await expect(page.getByRole('button', { name: /pausar rutina/i })).toBeVisible()
 
   await page.getByRole('link', { name: 'Inicio' }).click()
-  await expect(page.getByText(/ready to train/i)).toBeVisible()
+  await expect(page.getByText(/listo para entrenar/i)).toBeVisible()
   await expect(page.getByText(/upper \/ lower demo/i)).toBeVisible()
 
   await page.getByRole('button', { name: /iniciar rutina/i }).click()
@@ -70,7 +70,7 @@ test('completa el flujo principal del MVP para demo local', async ({ page }) => 
   await page.getByLabel(/rir real serie 1/i).fill('1')
 
   await page.getByRole('button', { name: /terminar antes/i }).click()
-  await expect(page.getByText(/ready to train/i)).toBeVisible()
+  await expect(page.getByText(/listo para entrenar/i)).toBeVisible()
   await expect(page.getByRole('status')).toContainText(/sesión guardada como terminada antes/i)
 
   await page.getByRole('link', { name: 'Historial' }).click()

@@ -43,7 +43,7 @@ export function DashboardPage() {
           <Card as="article" className="tracker-focus-card" variant="highlight">
             <div className="tracker-focus-card__header">
               <div>
-                <p className="eyebrow">Ready to train</p>
+                <p className="eyebrow">Listo para entrenar</p>
                 <h3 className="routine-card-title">{suggestedDay.day.label}</h3>
                 <p className="routine-summary">
                   {activeRoutine.name} · {getWorkoutDayLabel(suggestedDay)}
