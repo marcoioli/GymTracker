@@ -18,3 +18,11 @@ Thumbs.db
 .opencode/node_modules/
 __pycache__/
 *.pyc
+
+# Local env files and backend links that may contain secrets
+.env
+.env.local
+.env.*.local
+
+# Local InsForge project link and admin credentials
+.insforge/
