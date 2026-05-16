@@ -30,7 +30,7 @@ export async function createRoutine(page: Page, routine: RoutineSeed) {
   await page.getByRole('button', { name: /nueva rutina/i }).click()
   await page.getByLabel(/nombre de la rutina/i).fill(routine.name)
 
-  if (routine.days.length > 1) {
+  if (routine.days.length > 0) {
     await page.getByLabel(/^días$/i).first().fill(String(routine.days.length))
   }
 

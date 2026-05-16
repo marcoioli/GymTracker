@@ -37,7 +37,7 @@ test('exporta un backup local y permite restaurarlo por reemplazo', async ({ pag
   await page.getByRole('link', { name: /inicio/i }).click()
   await expect(page.locator('.tracker-focus-card').filter({ hasText: 'Rutina backup seed' })).toBeVisible()
 
-  await page.getByRole('link', { name: /rutinas/i }).click()
+  await page.getByLabel('Cambiar vista de workouts').getByRole('link', { name: /rutinas/i }).click()
   await expect(page.getByRole('heading', { name: 'Rutina backup seed' })).toBeVisible()
   await expect(page.getByRole('heading', { name: 'Rutina temporal' })).toHaveCount(0)
 })

@@ -4,22 +4,22 @@ context: |
   Tech stack: React + TypeScript + Vite + PWA (planned baseline)
   Architecture: local-first, offline-first, single-user mobile web app
   Product focus: gym workout tracking with editable routines and historical analytics
-  Testing: not installed yet; to be added during implementation foundation
+  Testing: vitest + @testing-library/react installed and working; run with `npx vitest run`
   Style: mobile-first UI, high-contrast athletic visual system, accessible form inputs
 
 strict_tdd: false
 
 testing:
-  detected: 2026-05-04
-  strict_tdd_reason: No test runner exists yet in the empty workspace
+  detected: 2026-05-14
+  strict_tdd_reason: Test runner exists but strict TDD is not enforced
   test_runner:
-    available: false
-    framework: null
-    command: null
+    available: true
+    framework: vitest
+    command: npx vitest run
   layers:
     unit:
-      available: false
-      tool: null
+      available: true
+      tool: vitest
     integration:
       available: false
       tool: null
@@ -31,11 +31,11 @@ testing:
     command: null
   quality_tools:
     linter:
-      available: false
-      command: null
+      available: true
+      command: npm run lint
     type_checker:
-      available: false
-      command: null
+      available: true
+      command: npm run typecheck
     formatter:
       available: false
       command: null

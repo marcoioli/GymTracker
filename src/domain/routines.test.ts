@@ -14,11 +14,11 @@ import {
 } from './routines'
 
 describe('routine domain helpers', () => {
-  it('validates week day counts between one and seven', () => {
+  it('validates week day counts from one day upward', () => {
     expect(isValidDayCount(1)).toBe(true)
     expect(isValidDayCount(7)).toBe(true)
+    expect(isValidDayCount(8)).toBe(true)
     expect(isValidDayCount(0)).toBe(false)
-    expect(isValidDayCount(8)).toBe(false)
   })
 
   it('creates weeks with named days in order', () => {

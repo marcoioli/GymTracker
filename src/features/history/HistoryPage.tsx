@@ -96,9 +96,8 @@ export function HistoryPage() {
   return (
     <>
       <PageSection
-        description="Historial real de sesiones guardadas y snapshots de cada ejercicio."
-        eyebrow="History"
-        title="Workout History"
+        headerHidden
+        title="Historial de entrenamientos"
         titleId="history-title"
       >
         {sessions.length === 0 ? (
@@ -132,7 +131,6 @@ export function HistoryPage() {
               <div className="stats-inline-grid stats-inline-grid--wide">
                 <StatInline label="Entrenamientos" value={`${summary.sessionCount}`} />
                 <StatInline label="Duración total" value={summary.totalDuration} />
-                <StatInline label="Volumen" value={summary.totalVolume} />
               </div>
             </Card>
 

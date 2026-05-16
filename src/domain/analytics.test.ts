@@ -1,6 +1,8 @@
 import {
   getCurrentWeekFrequencySummary,
+  getExerciseMilestoneSummary,
   getExerciseProgressPoints,
+  getExerciseSetProgressChart,
   getRoutineAdherenceSummary,
   getWeeklyVolumeSummaries,
   getWorkoutFrequencySummaries
@@ -140,18 +142,146 @@ describe('analytics selectors', () => {
         sessionId: 'session-1',
         performedAt: '2026-05-04T09:45:00.000Z',
         bestWeightKg: 82.5,
+        bestSetVolume: 660,
         totalReps: 16,
-        totalVolume: 1300
+        totalVolume: 1300,
+        hitBestWeight: false,
+        hitBestSet: false
       },
       {
         exerciseName: 'Press banca',
         sessionId: 'session-2',
         performedAt: '2026-05-12T09:45:00.000Z',
         bestWeightKg: 85,
+        bestSetVolume: 742.5,
         totalReps: 17,
-        totalVolume: 1422.5
+        totalVolume: 1422.5,
+        hitBestWeight: true,
+        hitBestSet: true
       }
     ])
+  })
+
+  it('tracks best weight and best set as separate historical milestones', () => {
+    const milestoneSessions: WorkoutSession[] = [
+      sessions[0],
+      {
+        ...sessions[1],
+        exercises: [
+          {
+            ...sessions[1].exercises[0],
+            sets: [
+              { id: 'set-3', setNumber: 1, reps: 10, weightKg: 80, actualRir: 2 },
+              { id: 'set-4', setNumber: 2, reps: 8, weightKg: 85, actualRir: 1 }
+            ]
+          }
+        ]
+      }
+    ]
+
+    expect(getExerciseProgressPoints(milestoneSessions, 'exercise-1')).toEqual([
+      {
+        exerciseName: 'Press banca',
+        sessionId: 'session-1',
+        performedAt: '2026-05-04T09:45:00.000Z',
+        bestWeightKg: 82.5,
+        bestSetVolume: 660,
+        totalReps: 16,
+        totalVolume: 1300,
+        hitBestWeight: false,
+        hitBestSet: false
+      },
+      {
+        exerciseName: 'Press banca',
+        sessionId: 'session-2',
+        performedAt: '2026-05-12T09:45:00.000Z',
+        bestWeightKg: 85,
+        bestSetVolume: 800,
+        totalReps: 18,
+        totalVolume: 1480,
+        hitBestWeight: true,
+        hitBestSet: true
+      }
+    ])
+
+    expect(getExerciseMilestoneSummary(milestoneSessions, 'exercise-1')).toEqual({
+      exerciseName: 'Press banca',
+      bestWeightKg: 85,
+      bestSetVolume: 800,
+      sessionsWithBestWeight: 1,
+      sessionsWithBestSet: 1,
+      sessionsWithAnyMilestone: 1,
+      latestBestWeightAt: '2026-05-12T09:45:00.000Z',
+      latestBestSetAt: '2026-05-12T09:45:00.000Z',
+      latestMilestoneAt: '2026-05-12T09:45:00.000Z'
+    })
+  })
+
+  it('derives per-set chart series from immutable session history and preserves missing set gaps', () => {
+    const chartSessions: WorkoutSession[] = [
+      sessions[0],
+      sessions[1],
+      {
+        ...sessions[1],
+        id: 'session-4',
+        startedAt: '2026-05-19T09:00:00.000Z',
+        endedAt: '2026-05-19T09:45:00.000Z',
+        exercises: [
+          {
+            ...sessions[1].exercises[0],
+            id: 'snap-4',
+            sets: [
+              { id: 'set-7', setNumber: 1, reps: 8, weightKg: 85, actualRir: 2 },
+              { id: 'set-8', setNumber: 2, reps: 8, weightKg: null, actualRir: 1 },
+              { id: 'set-9', setNumber: 3, reps: 6, weightKg: 87.5, actualRir: 1 }
+            ]
+          }
+        ]
+      }
+    ]
+
+    expect(getExerciseSetProgressChart(chartSessions, 'exercise-1')).toEqual({
+      exerciseName: 'Press banca',
+      timeline: [
+        { sessionId: 'session-1', performedAt: '2026-05-04T09:45:00.000Z' },
+        { sessionId: 'session-2', performedAt: '2026-05-12T09:45:00.000Z' },
+        { sessionId: 'session-4', performedAt: '2026-05-19T09:45:00.000Z' }
+      ],
+      series: [
+        {
+          exerciseName: 'Press banca',
+          setNumber: 1,
+          loggedPointCount: 3,
+          points: [
+            { sessionId: 'session-1', performedAt: '2026-05-04T09:45:00.000Z', weightKg: 80 },
+            { sessionId: 'session-2', performedAt: '2026-05-12T09:45:00.000Z', weightKg: 82.5 },
+            { sessionId: 'session-4', performedAt: '2026-05-19T09:45:00.000Z', weightKg: 85 }
+          ]
+        },
+        {
+          exerciseName: 'Press banca',
+          setNumber: 2,
+          loggedPointCount: 2,
+          points: [
+            { sessionId: 'session-1', performedAt: '2026-05-04T09:45:00.000Z', weightKg: 82.5 },
+            { sessionId: 'session-2', performedAt: '2026-05-12T09:45:00.000Z', weightKg: 85 },
+            { sessionId: 'session-4', performedAt: '2026-05-19T09:45:00.000Z', weightKg: null }
+          ]
+        },
+        {
+          exerciseName: 'Press banca',
+          setNumber: 3,
+          loggedPointCount: 1,
+          points: [
+            { sessionId: 'session-1', performedAt: '2026-05-04T09:45:00.000Z', weightKg: null },
+            { sessionId: 'session-2', performedAt: '2026-05-12T09:45:00.000Z', weightKg: null },
+            { sessionId: 'session-4', performedAt: '2026-05-19T09:45:00.000Z', weightKg: 87.5 }
+          ]
+        }
+      ],
+      minWeightKg: 80,
+      maxWeightKg: 87.5
+    })
   })
 
   it('ignores invalid exercise fragments and stale progress safely', () => {

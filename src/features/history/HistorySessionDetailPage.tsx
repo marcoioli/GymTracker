@@ -3,6 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 
 import { db } from '../../db/database'
+import { getSessionExerciseMilestones } from '../../domain/analytics'
 import { Button, Card, EmptyState, PageSection, StatusBanner } from '../../shared/ui'
 import {
   buildHistorySearchParams,
@@ -25,13 +26,28 @@ export function HistorySessionDetailPage() {
   const selectedDayKey = searchParams.get('dayKey') ?? 'all'
 
   const sessionRecord = useLiveQuery(
-    async () => ({ session: sessionId ? ((await db.sessions.get(sessionId)) ?? null) : null }),
+    async () => {
+      if (!sessionId) {
+        return { session: null, sessions: [] }
+      }
+
+      const [session, sessions] = await Promise.all([db.sessions.get(sessionId), db.sessions.toArray()])
+
+      return {
+        session: session ?? null,
+        sessions
+      }
+    },
     [sessionId],
     undefined
   )
   const routines = useLiveQuery(() => db.routines.toArray(), [], [])
 
   const routineLabels = useMemo(() => new Map(routines.map((routine) => [routine.id, routine.name])), [routines])
+  const exerciseMilestones = useMemo(
+    () => (sessionRecord?.session ? getSessionExerciseMilestones(sessionRecord.sessions, sessionRecord.session) : {}),
+    [sessionRecord]
+  )
 
   const backSearch = useMemo(
     () =>
@@ -110,36 +126,71 @@ export function HistorySessionDetailPage() {
 
         <p className="history-detail-note">Este detalle sale del snapshot guardado en el momento real del entrenamiento. Si la rutina cambió después, acá igual ves lo que pasó ese día.</p>
 
+        {session.notes ? (
+          <div className="history-note-card" aria-label="Nota guardada de la sesión">
+            <span className="history-note-card__label">Nota de la sesión</span>
+            <p>{session.notes}</p>
+          </div>
+        ) : null}
+
         <div className="history-detail-screen__section-heading">
           <h4>Exercises</h4>
           <span>{getSessionSetCount(session)} sets</span>
         </div>
 
         <div className="history-exercise-stack">
-          {session.exercises.map((exercise) => (
-            <Card className="history-exercise-card history-exercise-card--detail" key={exercise.id}>
-              <div className="session-exercise-card__header">
-                <div>
-                  <h4 className="routine-card-title">{exercise.exerciseName}</h4>
-                  <p className="routine-summary">
-                    {exercise.targetSets} series {exercise.targetRir !== null ? `· objetivo RIR ${exercise.targetRir}` : ''}
-                  </p>
-                </div>
-                <strong className="history-volume-chip">{formatVolume(exercise.sets)}</strong>
-              </div>
+          {session.exercises.map((exercise) => {
+            const milestone = exerciseMilestones[exercise.id]
 
-              <div className="history-set-stack history-set-stack--detail">
-                {exercise.sets.map((set) => (
-                  <div className="history-set-row history-set-row--detail" key={set.id}>
-                    <span className="history-set-row__index">{set.setNumber}</span>
-                    <span className="history-set-row__summary">
-                      {set.weightKg ?? '—'} kg, {set.reps ?? '—'} reps, RIR {set.actualRir ?? '—'}
-                    </span>
+            return (
+              <Card className="history-exercise-card history-exercise-card--detail" key={exercise.id}>
+                <div className="session-exercise-card__header">
+                  <div>
+                    <h4 className="routine-card-title">{exercise.exerciseName}</h4>
+                    {milestone?.hitBestWeight || milestone?.hitBestSet ? (
+                      <div className="record-badge-row" aria-label={`Hitos históricos de ${exercise.exerciseName}`}>
+                        {milestone.hitBestWeight ? <span className="record-badge record-badge--weight">Mejor peso</span> : null}
+                        {milestone.hitBestSet ? <span className="record-badge record-badge--set">Mejor serie</span> : null}
+                      </div>
+                    ) : null}
+                    <p className="routine-summary">
+                      {exercise.targetSets} series {exercise.targetRir !== null ? `· objetivo RIR ${exercise.targetRir}` : ''}
+                    </p>
                   </div>
-                ))}
-              </div>
-            </Card>
-          ))}
+                  <strong className="history-volume-chip">{formatVolume(exercise.sets)}</strong>
+                </div>
+
+                {exercise.notes ? (
+                  <div className="history-note-card history-note-card--exercise" aria-label={`Nota guardada de ${exercise.exerciseName}`}>
+                    <span className="history-note-card__label">Nota del ejercicio</span>
+                    <p>{exercise.notes}</p>
+                  </div>
+                ) : null}
+
+                <div className="history-set-stack history-set-stack--detail">
+                  {exercise.sets.map((set) => {
+                    const hitsBestWeight = milestone?.bestWeightSetIds.includes(set.id) ?? false
+                    const hitsBestSet = milestone?.bestSetSetIds.includes(set.id) ?? false
+
+                    return (
+                      <div className="history-set-row history-set-row--detail" key={set.id}>
+                        <span className="history-set-row__index">{set.setNumber}</span>
+                        <span className="history-set-row__summary">
+                          {set.weightKg ?? '—'} kg, {set.reps ?? '—'} reps, RIR {set.actualRir ?? '—'}
+                        </span>
+                        {hitsBestWeight || hitsBestSet ? (
+                          <div className="record-badge-row record-badge-row--detail" aria-label={`Hitos de la serie ${set.setNumber}`}>
+                            {hitsBestWeight ? <span className="record-badge record-badge--weight">Mejor peso</span> : null}
+                            {hitsBestSet ? <span className="record-badge record-badge--set">Mejor serie</span> : null}
+                          </div>
+                        ) : null}
+                      </div>
+                    )
+                  })}
+                </div>
+              </Card>
+            )
+          })}
         </div>
       </Card>
     </PageSection>

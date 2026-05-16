@@ -1,274 +1,509 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { MemoryRouter } from "react-router-dom";
 
-import { db } from '../../db/database'
-import { RoutinesPage } from './RoutinesPage'
-import { getAppStateRecord } from './routinesRepository'
+import { db } from "../../db/database";
+import { RoutinesPage } from "./RoutinesPage";
+import { getAppStateRecord } from "./routinesRepository";
 
-describe('RoutinesPage', () => {
-  it('creates a routine, stores the exercise catalog and allows editing without touching history', async () => {
-    const user = userEvent.setup()
+describe("RoutinesPage", () => {
+	it("creates a routine, stores the exercise catalog and allows editing without touching history", async () => {
+		const user = userEvent.setup();
 
-    render(
-      <MemoryRouter>
-        <RoutinesPage />
-      </MemoryRouter>
-    )
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
 
-    await user.click(screen.getByRole('button', { name: /nueva rutina/i }))
-    await user.type(screen.getByLabelText(/nombre de la rutina/i), 'Upper A')
-    fireEvent.change(screen.getByLabelText(/cantidad de semanas/i), { target: { value: '2' } })
+		await user.click(screen.getByRole("button", { name: /nueva rutina/i }));
+		await user.type(screen.getByLabelText(/nombre de la rutina/i), "Upper A");
+		const dayCountInputs = screen.getAllByLabelText(/^días$/i);
+		expect(dayCountInputs[0]).toHaveValue(null);
+		fireEvent.change(dayCountInputs[0], { target: { value: "10" } });
+		fireEvent.change(screen.getByLabelText(/cantidad de semanas/i), {
+			target: { value: "2" },
+		});
 
-    const weekNameInputs = screen.getAllByLabelText(/nombre de la semana/i)
-    await user.clear(weekNameInputs[1])
-    await user.type(weekNameInputs[1], 'Semana 2 - descarga')
+		const weekNameInputs = screen.getAllByLabelText(/nombre de la semana/i);
+		await user.clear(weekNameInputs[1]);
+		await user.type(weekNameInputs[1], "Semana 2 - descarga");
 
-    const dayInputs = screen.getAllByLabelText(/nombre del día/i)
-    await user.clear(dayInputs[0])
-    await user.type(dayInputs[0], 'Pecho y espalda')
+		const dayInputs = screen.getAllByLabelText(/nombre del día/i);
+		await user.clear(dayInputs[0]);
+		await user.type(dayInputs[0], "Pecho y espalda");
 
-    const addExerciseButtons = screen.getAllByRole('button', { name: /agregar ejercicio/i })
-    await user.click(addExerciseButtons[0])
+		const addExerciseButtons = screen.getAllByRole("button", {
+			name: /agregar ejercicio/i,
+		});
+		await user.click(addExerciseButtons[0]);
 
-    await user.type(screen.getByLabelText(/^ejercicio$/i), 'Press banca')
-    await user.click(screen.getByRole('button', { name: /agregar serie/i }))
-    fireEvent.change(screen.getAllByLabelText(/repeticiones objetivo serie/i)[0], { target: { value: '8-12' } })
-    fireEvent.change(screen.getAllByLabelText(/rir objetivo serie/i)[0], { target: { value: '2' } })
-    fireEvent.change(screen.getByLabelText(/grupo muscular/i), { target: { value: 'Pecho' } })
+		await user.type(screen.getByLabelText(/^ejercicio$/i), "Press banca");
+		await user.click(screen.getByRole("button", { name: /agregar serie/i }));
+		fireEvent.change(
+			screen.getAllByLabelText(/repeticiones objetivo serie/i)[0],
+			{ target: { value: "8-12" } },
+		);
+		fireEvent.change(screen.getAllByLabelText(/rir objetivo serie/i)[0], {
+			target: { value: "2" },
+		});
+		fireEvent.change(screen.getByLabelText(/grupo muscular/i), {
+			target: { value: "Pecho" },
+		});
 
-    await user.click(screen.getByRole('button', { name: /repetir semana anterior/i }))
+		await user.click(
+			screen.getByRole("button", { name: /repetir semana anterior/i }),
+		);
 
-    await user.click(screen.getByRole('button', { name: /guardar rutina/i }))
+		await user.click(screen.getByRole("button", { name: /guardar rutina/i }));
 
-    expect(await screen.findByRole('heading', { name: 'Upper A' })).toBeInTheDocument()
-    expect(screen.getAllByText(/8 series/i).length).toBeGreaterThan(0)
-    expect(screen.getAllByText(/pecho/i).length).toBeGreaterThan(0)
+		expect(
+			await screen.findByRole("heading", { name: "Upper A" }),
+		).toBeInTheDocument();
+		expect(screen.getAllByText(/4 series/i).length).toBeGreaterThan(0);
+		expect(screen.getAllByText(/pecho/i).length).toBeGreaterThan(0);
 
-    const savedRoutine = await db.routines.toCollection().first()
-    const catalogEntry = await db.exerciseCatalog.toCollection().first()
+		const savedRoutine = await db.routines.toCollection().first();
+		const catalogEntry = await db.exerciseCatalog.toCollection().first();
 
-    expect(savedRoutine?.weekCount).toBe(2)
-    expect(savedRoutine?.weeks[0]?.label).toBe('Semana 1')
-    expect(savedRoutine?.weeks[1]?.label).toBe('Semana 2 - descarga')
-    expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe('Pecho y espalda')
-    expect(savedRoutine?.weeks[1]?.days[0]?.label).toBe('Pecho y espalda')
-    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.muscle).toBe('Pecho')
-    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences).toHaveLength(4)
-    expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.repsTarget).toBe('8-12')
-    expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]).toMatchObject({
-      name: 'Press banca',
-      muscle: 'Pecho',
-      targetSets: 4,
-      targetRir: 2
-    })
-    expect(savedRoutine?.weeks[1]?.id).not.toBe(savedRoutine?.weeks[0]?.id)
-    expect(savedRoutine?.weeks[1]?.days[0]?.id).not.toBe(savedRoutine?.weeks[0]?.days[0]?.id)
-    expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.id).not.toBe(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.id)
-    expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]?.id).not.toBe(
-      savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.id
-    )
-    expect(catalogEntry?.name).toBe('Press banca')
+		expect(savedRoutine?.weekCount).toBe(2);
+		expect(savedRoutine?.weeks[0]?.days).toHaveLength(10);
+		expect(savedRoutine?.weeks[1]?.days).toHaveLength(10);
+		expect(savedRoutine?.weeks[0]?.label).toBe("Semana 1");
+		expect(savedRoutine?.weeks[1]?.label).toBe("Semana 2 - descarga");
+		expect(savedRoutine?.weeks[0]?.days[0]?.label).toBe("Pecho y espalda");
+		expect(savedRoutine?.weeks[1]?.days[0]?.label).toBe("Pecho y espalda");
+		expect(savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.muscle).toBe("Pecho");
+		expect(
+			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences,
+		).toHaveLength(2);
+		expect(
+			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]
+				?.weightTarget,
+		).toBe("");
+		expect(
+			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]
+				?.repsTarget,
+		).toBe("8-12");
+		expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]).toMatchObject({
+			name: "Press banca",
+			muscle: "Pecho",
+			targetSets: 2,
+			targetRir: 2,
+		});
+		expect(
+			savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]
+				?.weightTarget,
+		).toBe("");
+		expect(savedRoutine?.weeks[1]?.id).not.toBe(savedRoutine?.weeks[0]?.id);
+		expect(savedRoutine?.weeks[1]?.days[0]?.id).not.toBe(
+			savedRoutine?.weeks[0]?.days[0]?.id,
+		);
+		expect(savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.id).not.toBe(
+			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.id,
+		);
+		expect(
+			savedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]?.id,
+		).not.toBe(
+			savedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.id,
+		);
+		expect(catalogEntry?.name).toBe("Press banca");
 
-    await db.sessions.add({
-      id: 'session-1',
-      routineId: savedRoutine!.id,
-      dayId: savedRoutine!.weeks[0].days[0].id,
-      weekIndex: 0,
-      status: 'completed',
-      exercises: [
-        {
-          id: 'snapshot-1',
-          exerciseTemplateId: savedRoutine!.weeks[0].days[0].exercises[0].id,
-          exerciseName: 'Press banca',
-          targetSets: 4,
-          targetRir: 2,
-          muscle: 'Pecho',
-          sets: []
-        }
-      ],
-      startedAt: '2026-05-05T10:00:00.000Z',
-      endedAt: '2026-05-05T10:30:00.000Z'
-    })
+		await db.sessions.add({
+			id: "session-1",
+			routineId: savedRoutine!.id,
+			dayId: savedRoutine!.weeks[0].days[0].id,
+			weekIndex: 0,
+			status: "completed",
+			exercises: [
+				{
+					id: "snapshot-1",
+					exerciseTemplateId: savedRoutine!.weeks[0].days[0].exercises[0].id,
+					exerciseName: "Press banca",
+					targetSets: 2,
+					targetRir: 2,
+					muscle: "Pecho",
+					sets: [],
+				},
+			],
+			startedAt: "2026-05-05T10:00:00.000Z",
+			endedAt: "2026-05-05T10:30:00.000Z",
+		});
 
-    await user.click(screen.getByRole('button', { name: /editar/i }))
+		await user.click(screen.getByRole("button", { name: /editar/i }));
 
-    const routineNameInput = screen.getByLabelText(/nombre de la rutina/i)
-    await user.clear(routineNameInput)
-    await user.type(routineNameInput, 'Upper A v2')
+		const routineNameInput = screen.getByLabelText(/nombre de la rutina/i);
+		await user.clear(routineNameInput);
+		await user.type(routineNameInput, "Upper A v2");
 
-    const dayNameInputs = screen.getAllByLabelText(/nombre del día/i)
-    await user.clear(dayNameInputs[0])
-    await user.type(dayNameInputs[0], 'Push principal')
+		const dayNameInputs = screen.getAllByLabelText(/nombre del día/i);
+		await user.clear(dayNameInputs[0]);
+		await user.type(dayNameInputs[0], "Push principal");
 
-    await user.click(screen.getByRole('button', { name: /guardar cambios/i }))
+		await user.click(screen.getByRole("button", { name: /guardar cambios/i }));
 
-    expect(await screen.findByRole('heading', { name: 'Upper A v2' })).toBeInTheDocument()
+		expect(
+			await screen.findByRole("heading", { name: "Upper A v2" }),
+		).toBeInTheDocument();
 
-    const updatedRoutine = await db.routines.get(savedRoutine!.id)
-    const savedSession = await db.sessions.get('session-1')
+		const updatedRoutine = await db.routines.get(savedRoutine!.id);
+		const savedSession = await db.sessions.get("session-1");
 
-    expect(updatedRoutine?.weeks[0].days[0].label).toBe('Push principal')
-    expect(savedSession?.exercises[0]).toMatchObject({
-      exerciseName: 'Press banca',
-      targetSets: 4,
-      targetRir: 2
-    })
-  }, 10000)
+		expect(updatedRoutine?.weeks[0].days[0].label).toBe("Push principal");
+		expect(savedSession?.exercises[0]).toMatchObject({
+			exerciseName: "Press banca",
+			targetSets: 2,
+			targetRir: 2,
+		});
+	}, 15000);
 
-  it('repeats the previous week while editing without mutating the source week', async () => {
-    const routineId = 'routine-repeat-edit'
+	it("starts new exercises with one empty set and duplicates the previous series from agregar serie", async () => {
+		const user = userEvent.setup();
 
-    await db.routines.add({
-      id: routineId,
-      name: 'Upper Lower',
-      status: 'paused',
-      weekCount: 2,
-      progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
-      createdAt: '2026-05-05T10:00:00.000Z',
-      updatedAt: '2026-05-05T10:00:00.000Z',
-      weeks: [
-        {
-          id: 'week-1',
-          label: 'Semana 1',
-          days: [
-            {
-              id: 'day-1',
-              label: 'Push fuerte',
-              exercises: [
-                {
-                  id: 'exercise-1',
-                  name: 'Press banca',
-                  targetSets: 2,
-                  targetRir: 1,
-                  muscle: 'Pecho',
-                  setReferences: [
-                    { id: 'set-1', repsTarget: '6-8', rirTarget: '1' },
-                    { id: 'set-2', repsTarget: '8-10', rirTarget: '2' }
-                  ]
-                }
-              ]
-            }
-          ]
-        },
-        {
-          id: 'week-2',
-          label: 'Semana 2 personalizada',
-          days: [
-            {
-              id: 'day-2',
-              label: 'Viejo día',
-              exercises: [
-                {
-                  id: 'exercise-2',
-                  name: 'Curl martillo',
-                  targetSets: 1,
-                  targetRir: 0,
-                  muscle: 'Biceps',
-                  setReferences: [{ id: 'set-3', repsTarget: '12', rirTarget: '0' }]
-                }
-              ]
-            }
-          ]
-        }
-      ]
-    })
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
 
-    const user = userEvent.setup()
+		await user.click(screen.getByRole("button", { name: /nueva rutina/i }));
+		fireEvent.change(screen.getByLabelText(/^días$/i), {
+			target: { value: "1" },
+		});
+		await user.click(
+			screen.getByRole("button", { name: /agregar ejercicio/i }),
+		);
 
-    render(
-      <MemoryRouter>
-        <RoutinesPage />
-      </MemoryRouter>
-    )
+		expect(
+			screen.getAllByLabelText(/repeticiones objetivo serie/i),
+		).toHaveLength(1);
+		expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(1);
+		expect(
+			screen.queryByRole("button", { name: /repetir serie/i }),
+		).not.toBeInTheDocument();
 
-    await user.click(await screen.findByRole('button', { name: /editar/i }))
-    await user.click(screen.getByRole('button', { name: /repetir semana anterior/i }))
+		fireEvent.change(screen.getByLabelText(/repeticiones objetivo serie 1/i), {
+			target: { value: "6-8" },
+		});
+		fireEvent.change(screen.getByLabelText(/rir objetivo serie 1/i), {
+			target: { value: "1" },
+		});
 
-    const dayNameInputs = screen.getAllByLabelText(/nombre del día/i)
-    await user.clear(dayNameInputs[1])
-    await user.type(dayNameInputs[1], 'Push técnico')
+		await user.click(screen.getByRole("button", { name: /agregar serie/i }));
 
-    const exerciseInputs = screen.getAllByLabelText(/^ejercicio$/i)
-    await user.clear(exerciseInputs[1])
-    await user.type(exerciseInputs[1], 'Press inclinado')
+		expect(
+			screen.getAllByLabelText(/repeticiones objetivo serie/i),
+		).toHaveLength(2);
+		expect(screen.getAllByLabelText(/rir objetivo serie/i)).toHaveLength(2);
+		expect(screen.getByLabelText(/repeticiones objetivo serie 2/i)).toHaveValue(
+			"6-8",
+		);
+		expect(screen.getByLabelText(/rir objetivo serie 2/i)).toHaveValue("1");
+	});
 
-    const muscleSelects = screen.getAllByLabelText(/grupo muscular/i)
-    fireEvent.change(muscleSelects[1], { target: { value: 'Hombro' } })
+	it("keeps day count empty on a new routine until the user defines it", async () => {
+		const user = userEvent.setup();
 
-    await user.click(screen.getByRole('button', { name: /guardar cambios/i }))
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
 
-    const updatedRoutine = await db.routines.get(routineId)
+		await user.click(screen.getByRole("button", { name: /nueva rutina/i }));
 
-    expect(updatedRoutine?.weeks[0]?.days[0]?.label).toBe('Push fuerte')
-    expect(updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.name).toBe('Press banca')
-    expect(updatedRoutine?.weeks[1]?.label).toBe('Semana 2 personalizada')
-    expect(updatedRoutine?.weeks[1]?.days[0]?.label).toBe('Push técnico')
-    expect(updatedRoutine?.weeks[1]?.days[0]?.exercises[0]).toMatchObject({
-      name: 'Press inclinado',
-      muscle: 'Hombro',
-      targetSets: 2,
-      targetRir: 1
-    })
-    expect(updatedRoutine?.weeks[1]?.id).not.toBe(updatedRoutine?.weeks[0]?.id)
-    expect(updatedRoutine?.weeks[1]?.days[0]?.id).not.toBe(updatedRoutine?.weeks[0]?.days[0]?.id)
-    expect(updatedRoutine?.weeks[1]?.days[0]?.exercises[0]?.id).not.toBe(updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.id)
-    expect(updatedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]?.id).not.toBe(
-      updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.id
-    )
-  })
+		expect(screen.getByLabelText(/^días$/i)).toHaveValue(null);
+		expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument();
+	});
 
-  it('keeps a single active routine and updates app state when switching routines', async () => {
-    const firstRoutineId = 'routine-1'
-    const secondRoutineId = 'routine-2'
+	it("allows clearing the day-count input temporarily and reduces days after confirmation", async () => {
+		const routineId = "routine-preserve-days";
+		const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
 
-    await db.routines.bulkAdd([
-      {
-        id: firstRoutineId,
-        name: 'Push Pull Legs',
-        status: 'active',
-        weekCount: 1,
-        weeks: [],
-        progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
-        createdAt: '2026-05-05T10:00:00.000Z',
-        updatedAt: '2026-05-05T10:00:00.000Z'
-      },
-      {
-        id: secondRoutineId,
-        name: 'Upper Lower',
-        status: 'paused',
-        weekCount: 1,
-        weeks: [],
-        progress: { currentWeekIndex: 0, lastCompletedDayId: null, lastCompletedAt: null },
-        createdAt: '2026-05-05T10:00:00.000Z',
-        updatedAt: '2026-05-05T10:00:00.000Z'
-      }
-    ])
+		await db.routines.add({
+			id: routineId,
+			name: "Rutina guardada",
+			status: "paused",
+			weekCount: 1,
+			progress: {
+				currentWeekIndex: 0,
+				lastCompletedDayId: null,
+				lastCompletedAt: null,
+			},
+			createdAt: "2026-05-05T10:00:00.000Z",
+			updatedAt: "2026-05-05T10:00:00.000Z",
+			weeks: [
+				{
+					id: "week-1",
+					label: "Semana 1",
+					days: [
+						{ id: "day-1", label: "Push", exercises: [] },
+						{ id: "day-2", label: "Pull", exercises: [] },
+					],
+				},
+			],
+		});
 
-    await db.appState.put({ key: 'activeRoutineId', value: firstRoutineId })
+		const user = userEvent.setup();
 
-    const user = userEvent.setup()
-    render(
-      <MemoryRouter>
-        <RoutinesPage />
-      </MemoryRouter>
-    )
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
 
-    const activateButtons = await screen.findAllByRole('button', { name: /activar rutina/i })
-    await user.click(activateButtons[0])
+		await user.click(await screen.findByRole("button", { name: /editar/i }));
 
-    await waitFor(async () => {
-      const activeRoutine = await db.routines.get(secondRoutineId)
-      expect(activeRoutine?.status).toBe('active')
-    })
+		const dayCountInput = screen.getByLabelText(/^días$/i);
+		fireEvent.change(dayCountInput, { target: { value: "" } });
+		expect(dayCountInput).toHaveValue(null);
+		expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(2);
 
-    const pausedRoutine = await db.routines.get(firstRoutineId)
-    const activeRoutine = await db.routines.get(secondRoutineId)
-    const appState = await getAppStateRecord('activeRoutineId')
+		fireEvent.blur(dayCountInput);
+		expect(dayCountInput).toHaveValue(2);
 
-    expect(pausedRoutine?.status).toBe('paused')
-    expect(activeRoutine?.status).toBe('active')
-    expect(appState?.value).toBe(secondRoutineId)
-    expect(await db.routines.where('status').equals('active').count()).toBe(1)
-  })
-})
+		fireEvent.change(dayCountInput, { target: { value: "1" } });
+		expect(confirmSpy).toHaveBeenCalled();
+		expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(1);
+		expect(dayCountInput).toHaveValue(1);
+
+		confirmSpy.mockRestore();
+	});
+
+	it("can explicitly vaciar semana y vaciar rutina", async () => {
+		const routineId = "routine-clear-actions";
+		const confirmSpy = vi.spyOn(window, "confirm").mockReturnValue(true);
+
+		await db.routines.add({
+			id: routineId,
+			name: "Rutina vaciable",
+			status: "paused",
+			weekCount: 2,
+			progress: {
+				currentWeekIndex: 0,
+				lastCompletedDayId: null,
+				lastCompletedAt: null,
+			},
+			createdAt: "2026-05-05T10:00:00.000Z",
+			updatedAt: "2026-05-05T10:00:00.000Z",
+			weeks: [
+				{
+					id: "week-1",
+					label: "Semana 1",
+					days: [{ id: "day-1", label: "Push", exercises: [] }],
+				},
+				{
+					id: "week-2",
+					label: "Semana 2",
+					days: [{ id: "day-2", label: "Pull", exercises: [] }],
+				},
+			],
+		});
+
+		const user = userEvent.setup();
+
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
+
+		await user.click(await screen.findByRole("button", { name: /editar/i }));
+		await user.click(
+			screen.getAllByRole("button", { name: /vaciar semana/i })[0],
+		);
+
+		expect(screen.getAllByLabelText(/nombre del día/i)).toHaveLength(1);
+		expect(screen.getAllByLabelText(/^días$/i)[0]).toHaveValue(null);
+		expect(screen.getAllByLabelText(/^días$/i)[1]).toHaveValue(1);
+
+		await user.click(screen.getByRole("button", { name: /vaciar rutina/i }));
+		expect(screen.queryByLabelText(/nombre del día/i)).not.toBeInTheDocument();
+		expect(screen.getAllByLabelText(/^días$/i)[0]).toHaveValue(null);
+		expect(screen.getAllByLabelText(/^días$/i)[1]).toHaveValue(null);
+
+		confirmSpy.mockRestore();
+	});
+
+	it("repeats the previous week while editing without mutating the source week", async () => {
+		const routineId = "routine-repeat-edit";
+
+		await db.routines.add({
+			id: routineId,
+			name: "Upper Lower",
+			status: "paused",
+			weekCount: 2,
+			progress: {
+				currentWeekIndex: 0,
+				lastCompletedDayId: null,
+				lastCompletedAt: null,
+			},
+			createdAt: "2026-05-05T10:00:00.000Z",
+			updatedAt: "2026-05-05T10:00:00.000Z",
+			weeks: [
+				{
+					id: "week-1",
+					label: "Semana 1",
+					days: [
+						{
+							id: "day-1",
+							label: "Push fuerte",
+							exercises: [
+								{
+									id: "exercise-1",
+									name: "Press banca",
+									targetSets: 2,
+									targetRir: 1,
+									muscle: "Pecho",
+									setReferences: [
+										{ id: "set-1", repsTarget: "6-8", rirTarget: "1" },
+										{ id: "set-2", repsTarget: "8-10", rirTarget: "2" },
+									],
+								},
+							],
+						},
+					],
+				},
+				{
+					id: "week-2",
+					label: "Semana 2 personalizada",
+					days: [
+						{
+							id: "day-2",
+							label: "Viejo día",
+							exercises: [
+								{
+									id: "exercise-2",
+									name: "Curl martillo",
+									targetSets: 1,
+									targetRir: 0,
+									muscle: "Biceps",
+									setReferences: [
+										{ id: "set-3", repsTarget: "12", rirTarget: "0" },
+									],
+								},
+							],
+						},
+					],
+				},
+			],
+		});
+
+		const user = userEvent.setup();
+
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
+
+		await user.click(await screen.findByRole("button", { name: /editar/i }));
+		await user.click(
+			screen.getByRole("button", { name: /repetir semana anterior/i }),
+		);
+
+		const dayNameInputs = screen.getAllByLabelText(/nombre del día/i);
+		await user.clear(dayNameInputs[1]);
+		await user.type(dayNameInputs[1], "Push técnico");
+
+		const exerciseInputs = screen.getAllByLabelText(/^ejercicio$/i);
+		await user.clear(exerciseInputs[1]);
+		await user.type(exerciseInputs[1], "Press inclinado");
+
+		const muscleSelects = screen.getAllByLabelText(/grupo muscular/i);
+		fireEvent.change(muscleSelects[1], { target: { value: "Hombro" } });
+
+		await user.click(screen.getByRole("button", { name: /guardar cambios/i }));
+
+		const updatedRoutine = await db.routines.get(routineId);
+
+		expect(updatedRoutine?.weeks[0]?.days[0]?.label).toBe("Push fuerte");
+		expect(updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.name).toBe(
+			"Press banca",
+		);
+		expect(updatedRoutine?.weeks[1]?.label).toBe("Semana 2 personalizada");
+		expect(updatedRoutine?.weeks[1]?.days[0]?.label).toBe("Push técnico");
+		expect(updatedRoutine?.weeks[1]?.days[0]?.exercises[0]).toMatchObject({
+			name: "Press inclinado",
+			muscle: "Hombro",
+			targetSets: 2,
+			targetRir: 1,
+		});
+		expect(updatedRoutine?.weeks[1]?.id).not.toBe(updatedRoutine?.weeks[0]?.id);
+		expect(updatedRoutine?.weeks[1]?.days[0]?.id).not.toBe(
+			updatedRoutine?.weeks[0]?.days[0]?.id,
+		);
+		expect(updatedRoutine?.weeks[1]?.days[0]?.exercises[0]?.id).not.toBe(
+			updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.id,
+		);
+		expect(
+			updatedRoutine?.weeks[1]?.days[0]?.exercises[0]?.setReferences?.[0]?.id,
+		).not.toBe(
+			updatedRoutine?.weeks[0]?.days[0]?.exercises[0]?.setReferences?.[0]?.id,
+		);
+	});
+
+	it("keeps a single active routine and updates app state when switching routines", async () => {
+		const firstRoutineId = "routine-1";
+		const secondRoutineId = "routine-2";
+
+		await db.routines.bulkAdd([
+			{
+				id: firstRoutineId,
+				name: "Push Pull Legs",
+				status: "active",
+				weekCount: 1,
+				weeks: [],
+				progress: {
+					currentWeekIndex: 0,
+					lastCompletedDayId: null,
+					lastCompletedAt: null,
+				},
+				createdAt: "2026-05-05T10:00:00.000Z",
+				updatedAt: "2026-05-05T10:00:00.000Z",
+			},
+			{
+				id: secondRoutineId,
+				name: "Upper Lower",
+				status: "paused",
+				weekCount: 1,
+				weeks: [],
+				progress: {
+					currentWeekIndex: 0,
+					lastCompletedDayId: null,
+					lastCompletedAt: null,
+				},
+				createdAt: "2026-05-05T10:00:00.000Z",
+				updatedAt: "2026-05-05T10:00:00.000Z",
+			},
+		]);
+
+		await db.appState.put({ key: "activeRoutineId", value: firstRoutineId });
+
+		const user = userEvent.setup();
+		render(
+			<MemoryRouter>
+				<RoutinesPage />
+			</MemoryRouter>,
+		);
+
+		const activateButtons = await screen.findAllByRole("button", {
+			name: /activar rutina/i,
+		});
+		await user.click(activateButtons[0]);
+
+		await waitFor(async () => {
+			const activeRoutine = await db.routines.get(secondRoutineId);
+			expect(activeRoutine?.status).toBe("active");
+		});
+
+		const pausedRoutine = await db.routines.get(firstRoutineId);
+		const activeRoutine = await db.routines.get(secondRoutineId);
+		const appState = await getAppStateRecord("activeRoutineId");
+
+		expect(pausedRoutine?.status).toBe("paused");
+		expect(activeRoutine?.status).toBe("active");
+		expect(appState?.value).toBe(secondRoutineId);
+		expect(await db.routines.where("status").equals("active").count()).toBe(1);
+	});
+});

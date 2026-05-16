@@ -23,8 +23,53 @@ export type ExerciseProgressPoint = {
   sessionId: string
   performedAt: string
   bestWeightKg: number | null
+  bestSetVolume: number | null
   totalReps: number
   totalVolume: number
+  hitBestWeight: boolean
+  hitBestSet: boolean
+}
+
+export type ExerciseMilestoneSummary = {
+  exerciseName: string
+  bestWeightKg: number | null
+  bestSetVolume: number | null
+  sessionsWithBestWeight: number
+  sessionsWithBestSet: number
+  sessionsWithAnyMilestone: number
+  latestBestWeightAt: string | null
+  latestBestSetAt: string | null
+  latestMilestoneAt: string | null
+}
+
+export type ExerciseSetProgressPoint = {
+  sessionId: string
+  performedAt: string
+  weightKg: number | null
+}
+
+export type ExerciseSetProgressSeries = {
+  exerciseName: string
+  setNumber: number
+  points: ExerciseSetProgressPoint[]
+  loggedPointCount: number
+}
+
+export type ExerciseSetProgressChart = {
+  exerciseName: string
+  timeline: Array<Pick<ExerciseSetProgressPoint, 'sessionId' | 'performedAt'>>
+  series: ExerciseSetProgressSeries[]
+  minWeightKg: number | null
+  maxWeightKg: number | null
+}
+
+export type SessionExerciseMilestone = {
+  bestWeightKg: number | null
+  bestSetVolume: number | null
+  hitBestWeight: boolean
+  hitBestSet: boolean
+  bestWeightSetIds: string[]
+  bestSetSetIds: string[]
 }
 
 export function getCurrentWeekFrequencySummary(
@@ -85,53 +130,129 @@ export function getExerciseProgressPoints(
   exerciseKey: string,
   limit = 8
 ): ExerciseProgressPoint[] {
-  const normalizedKey = normalizeExerciseName(exerciseKey)
+  const occurrences = getExerciseOccurrences(sessions, exerciseKey)
+  const milestoneSummary = buildExerciseMilestoneSummary(occurrences)
 
-  return sessions
-    .slice()
-    .sort((left, right) => left.endedAt.localeCompare(right.endedAt))
-    .flatMap((session) =>
-      session.exercises.flatMap((exercise) => {
-        if (!exercise.exerciseName.trim() && !exercise.exerciseTemplateId) {
-          return []
-        }
+  if (!milestoneSummary) {
+    return []
+  }
 
-        const matches =
-          exercise.exerciseTemplateId === exerciseKey || normalizeExerciseName(exercise.exerciseName) === normalizedKey
-
-        if (!matches) {
-          return []
-        }
-
-        const bestWeightKg = exercise.sets.reduce<number | null>((best, set) => {
-          if (set.weightKg === null) {
-            return best
-          }
-
-          return best === null ? set.weightKg : Math.max(best, set.weightKg)
-        }, null)
-
-        const totalReps = exercise.sets.reduce((total, set) => total + (set.reps ?? 0), 0)
-        const totalVolume = exercise.sets.reduce((total, set) => total + getSetVolume(set.reps, set.weightKg), 0)
-
-        return [
-          {
-            exerciseName: exercise.exerciseName,
-            sessionId: session.id,
-            performedAt: session.endedAt,
-            bestWeightKg,
-            totalReps,
-            totalVolume
-          }
-        ]
-      })
-    )
+  return occurrences
+    .map((occurrence) => ({
+      exerciseName: occurrence.exerciseName,
+      sessionId: occurrence.sessionId,
+      performedAt: occurrence.performedAt,
+      bestWeightKg: occurrence.bestWeightKg,
+      bestSetVolume: occurrence.bestSetVolume,
+      totalReps: occurrence.totalReps,
+      totalVolume: occurrence.totalVolume,
+      hitBestWeight: milestoneSummary.bestWeightKg !== null && occurrence.bestWeightKg === milestoneSummary.bestWeightKg,
+      hitBestSet: milestoneSummary.bestSetVolume !== null && occurrence.bestSetVolume === milestoneSummary.bestSetVolume
+    }))
     .slice(-limit)
+}
+
+export function getExerciseMilestoneSummary(
+  sessions: WorkoutSession[],
+  exerciseKey: string
+): ExerciseMilestoneSummary | null {
+  return buildExerciseMilestoneSummary(getExerciseOccurrences(sessions, exerciseKey))
+}
+
+export function getExerciseSetProgressChart(
+  sessions: WorkoutSession[],
+  exerciseKey: string
+): ExerciseSetProgressChart | null {
+  const occurrences = getExerciseOccurrences(sessions, exerciseKey)
+
+  if (occurrences.length === 0) {
+    return null
+  }
+
+  const timeline = occurrences.map((occurrence) => ({
+    sessionId: occurrence.sessionId,
+    performedAt: occurrence.performedAt
+  }))
+  const setNumbers = Array.from(
+    new Set(
+      occurrences.flatMap((occurrence) => occurrence.setWeights.map((set) => set.setNumber))
+    )
+  ).sort((left, right) => left - right)
+  const series = setNumbers
+    .map<ExerciseSetProgressSeries>((setNumber) => {
+      const points = occurrences.map<ExerciseSetProgressPoint>((occurrence) => ({
+        sessionId: occurrence.sessionId,
+        performedAt: occurrence.performedAt,
+        weightKg: occurrence.setWeights.find((set) => set.setNumber === setNumber)?.weightKg ?? null
+      }))
+
+      return {
+        exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
+        setNumber,
+        points,
+        loggedPointCount: points.filter((point) => point.weightKg !== null).length
+      }
+    })
+    .filter((entry) => entry.loggedPointCount > 0)
+  const loggedWeights = series.flatMap((entry) => entry.points.map((point) => point.weightKg).filter((value): value is number => value !== null))
+
+  return {
+    exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
+    timeline,
+    series,
+    minWeightKg: loggedWeights.length > 0 ? Math.min(...loggedWeights) : null,
+    maxWeightKg: loggedWeights.length > 0 ? Math.max(...loggedWeights) : null
+  }
+}
+
+export function getSessionExerciseMilestones(
+  sessions: WorkoutSession[],
+  targetSession: WorkoutSession
+): Record<string, SessionExerciseMilestone> {
+  const summaryByExercise = new Map<string, ExerciseMilestoneSummary | null>()
+
+  return targetSession.exercises.reduce<Record<string, SessionExerciseMilestone>>((milestones, exercise) => {
+    const key = getExerciseHistoryKey(exercise.exerciseTemplateId, exercise.exerciseName)
+
+    if (!key) {
+      return milestones
+    }
+
+    if (!summaryByExercise.has(key)) {
+      summaryByExercise.set(key, getExerciseMilestoneSummary(sessions, key))
+    }
+
+    const summary = summaryByExercise.get(key)
+
+    if (!summary) {
+      return milestones
+    }
+
+    const bestWeightSetIds =
+      summary.bestWeightKg === null
+        ? []
+        : exercise.sets.filter((set) => set.weightKg === summary.bestWeightKg).map((set) => set.id)
+    const bestSetSetIds =
+      summary.bestSetVolume === null
+        ? []
+        : exercise.sets.filter((set) => getSetVolume(set.reps, set.weightKg) === summary.bestSetVolume).map((set) => set.id)
+
+    milestones[exercise.id] = {
+      bestWeightKg: summary.bestWeightKg,
+      bestSetVolume: summary.bestSetVolume,
+      hitBestWeight: bestWeightSetIds.length > 0,
+      hitBestSet: bestSetSetIds.length > 0,
+      bestWeightSetIds,
+      bestSetSetIds
+    }
+
+    return milestones
+  }, {})
 }
 
 export function getSessionVolume(session: WorkoutSession): number {
   return session.exercises.reduce(
-    (sessionTotal, exercise) => sessionTotal + exercise.sets.reduce((setTotal, set) => setTotal + getSetVolume(set.reps, set.weightKg), 0),
+    (sessionTotal, exercise) => sessionTotal + exercise.sets.reduce((setTotal, set) => setTotal + (getSetVolume(set.reps, set.weightKg) ?? 0), 0),
     0
   )
 }
@@ -161,9 +282,135 @@ function aggregateSessionsByWeek(
   }, new Map<string, number>())
 }
 
-function getSetVolume(reps: number | null, weightKg: number | null): number {
+type ExerciseOccurrence = {
+  exerciseName: string
+  sessionId: string
+  performedAt: string
+  setWeights: Array<{ setNumber: number; weightKg: number | null }>
+  bestWeightKg: number | null
+  bestSetVolume: number | null
+  totalReps: number
+  totalVolume: number
+}
+
+function getExerciseOccurrences(sessions: WorkoutSession[], exerciseKey: string): ExerciseOccurrence[] {
+  const requestedKey = normalizeExerciseName(exerciseKey)
+
+  return sessions
+    .slice()
+    .sort((left, right) => left.endedAt.localeCompare(right.endedAt))
+    .flatMap((session) =>
+      session.exercises.flatMap((exercise) => {
+        const key = getExerciseHistoryKey(exercise.exerciseTemplateId, exercise.exerciseName)
+
+        if (!key || key !== requestedKey) {
+          return []
+        }
+
+        const bestWeightKg = exercise.sets.reduce<number | null>((best, set) => {
+          if (set.weightKg === null) {
+            return best
+          }
+
+          return best === null ? set.weightKg : Math.max(best, set.weightKg)
+        }, null)
+        const bestSetVolume = exercise.sets.reduce<number | null>((best, set) => {
+          const volume = getSetVolume(set.reps, set.weightKg)
+
+          if (volume === null) {
+            return best
+          }
+
+          return best === null ? volume : Math.max(best, volume)
+        }, null)
+        const totalReps = exercise.sets.reduce((total, set) => total + (set.reps ?? 0), 0)
+        const totalVolume = exercise.sets.reduce((total, set) => total + (getSetVolume(set.reps, set.weightKg) ?? 0), 0)
+
+        return [
+          {
+            exerciseName: exercise.exerciseName,
+            sessionId: session.id,
+            performedAt: session.endedAt,
+            setWeights: exercise.sets.map((set) => ({
+              setNumber: set.setNumber,
+              weightKg: set.weightKg
+            })),
+            bestWeightKg,
+            bestSetVolume,
+            totalReps,
+            totalVolume
+          }
+        ]
+      })
+    )
+}
+
+function buildExerciseMilestoneSummary(occurrences: ExerciseOccurrence[]): ExerciseMilestoneSummary | null {
+  if (occurrences.length === 0) {
+    return null
+  }
+
+  const bestWeightKg = occurrences.reduce<number | null>((best, occurrence) => {
+    if (occurrence.bestWeightKg === null) {
+      return best
+    }
+
+    return best === null ? occurrence.bestWeightKg : Math.max(best, occurrence.bestWeightKg)
+  }, null)
+  const bestSetVolume = occurrences.reduce<number | null>((best, occurrence) => {
+    if (occurrence.bestSetVolume === null) {
+      return best
+    }
+
+    return best === null ? occurrence.bestSetVolume : Math.max(best, occurrence.bestSetVolume)
+  }, null)
+  const sessionsWithBestWeight =
+    bestWeightKg === null ? 0 : occurrences.filter((occurrence) => occurrence.bestWeightKg === bestWeightKg).length
+  const sessionsWithBestSet =
+    bestSetVolume === null ? 0 : occurrences.filter((occurrence) => occurrence.bestSetVolume === bestSetVolume).length
+  const sessionsWithAnyMilestone = occurrences.filter(
+    (occurrence) =>
+      (bestWeightKg !== null && occurrence.bestWeightKg === bestWeightKg) ||
+      (bestSetVolume !== null && occurrence.bestSetVolume === bestSetVolume)
+  ).length
+  const latestBestWeightAt = bestWeightKg === null ? null : findLatestOccurrenceDate(occurrences, (occurrence) => occurrence.bestWeightKg === bestWeightKg)
+  const latestBestSetAt = bestSetVolume === null ? null : findLatestOccurrenceDate(occurrences, (occurrence) => occurrence.bestSetVolume === bestSetVolume)
+
+  return {
+    exerciseName: occurrences.at(-1)?.exerciseName ?? occurrences[0].exerciseName,
+    bestWeightKg,
+    bestSetVolume,
+    sessionsWithBestWeight,
+    sessionsWithBestSet,
+    sessionsWithAnyMilestone,
+    latestBestWeightAt,
+    latestBestSetAt,
+    latestMilestoneAt: [latestBestWeightAt, latestBestSetAt].filter((value): value is string => value !== null).sort().at(-1) ?? null
+  }
+}
+
+function getExerciseHistoryKey(exerciseTemplateId: string | null, exerciseName: string): string {
+  return normalizeExerciseName(exerciseTemplateId ?? exerciseName)
+}
+
+function findLatestOccurrenceDate(
+  occurrences: ExerciseOccurrence[],
+  predicate: (occurrence: ExerciseOccurrence) => boolean
+): string | null {
+  for (let index = occurrences.length - 1; index >= 0; index -= 1) {
+    const occurrence = occurrences[index]
+
+    if (predicate(occurrence)) {
+      return occurrence.performedAt
+    }
+  }
+
+  return null
+}
+
+function getSetVolume(reps: number | null, weightKg: number | null): number | null {
   if (reps === null || weightKg === null) {
-    return 0
+    return null
   }
 
   return reps * weightKg

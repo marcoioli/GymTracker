@@ -11,6 +11,7 @@ export type SessionSetInputDraft = {
 export type SessionExerciseInputDraft = {
   exerciseId: string
   exerciseName: string
+  notes?: string
   sets: SessionSetInputDraft[]
 }
 
@@ -29,6 +30,7 @@ export type SessionExerciseSnapshot = {
   targetSets: number
   targetRir: number | null
   muscle: MuscleGroup
+  notes?: string
   sets: SessionSetRecord[]
 }
 
@@ -41,17 +43,30 @@ export type WorkoutSession = {
   weekLabel?: string
   dayLabel?: string
   status: SessionStatus
+  notes?: string
   exercises: SessionExerciseSnapshot[]
   startedAt: string
   endedAt: string
 }
 
-type LegacySessionExerciseSnapshot = Omit<SessionExerciseSnapshot, 'muscle'> & {
+type LegacySessionExerciseSnapshot = Omit<SessionExerciseSnapshot, 'muscle' | 'notes'> & {
   muscle?: unknown
+  notes?: unknown
 }
 
-type LegacyWorkoutSession = Omit<WorkoutSession, 'exercises'> & {
+type LegacyWorkoutSession = Omit<WorkoutSession, 'exercises' | 'notes'> & {
+  notes?: unknown
   exercises: LegacySessionExerciseSnapshot[]
+}
+
+export function normalizeSessionNote(value: unknown): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined
+  }
+
+  const normalizedValue = value.replace(/\r\n/g, '\n').trim()
+
+  return normalizedValue ? normalizedValue : undefined
 }
 
 export function parseSessionNumericInput(value: string | undefined): number | null {
@@ -84,13 +99,15 @@ export function buildSanitizedSessionSetRecords(
 export function normalizeSessionExerciseSnapshot(exercise: LegacySessionExerciseSnapshot): SessionExerciseSnapshot {
   return {
     ...exercise,
-    muscle: isMuscleGroup(exercise.muscle) ? exercise.muscle : DEFAULT_MUSCLE_GROUP
+    muscle: isMuscleGroup(exercise.muscle) ? exercise.muscle : DEFAULT_MUSCLE_GROUP,
+    notes: normalizeSessionNote(exercise.notes)
   }
 }
 
 export function normalizeWorkoutSessionRecord(session: LegacyWorkoutSession): WorkoutSession {
   return {
     ...session,
+    notes: normalizeSessionNote(session.notes),
     exercises: session.exercises.map(normalizeSessionExerciseSnapshot)
   }
 }

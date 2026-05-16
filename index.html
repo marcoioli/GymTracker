@@ -3,13 +3,126 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#101826" />
-    <link rel="icon" href="/icons/app-icon.svg" type="image/svg+xml" />
-    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.svg" />
-    <title>GymTracker</title>
+    <meta name="theme-color" content="#F74000" />
+    <link rel="icon" href="/icons/treino-app-icon.png" type="image/png" />
+    <link rel="apple-touch-icon" href="/icons/treino-app-icon.png" />
+    <title>Treino</title>
+    <script>
+      (() => {
+        const theme =
+          window.localStorage.getItem("gymtracker:theme") === "light"
+            ? "light"
+            : "dark";
+        document.documentElement.dataset.theme = theme;
+        document.documentElement.style.colorScheme = theme;
+        window.__treinoSplashStart = window.performance?.now?.() ?? Date.now();
+      })();
+    </script>
+    <style>
+      :root {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        min-width: 320px;
+        min-height: 100vh;
+        background-color: #F74000;
+      }
+
+      body {
+        background: #F74000;
+        color: #fff;
+      }
+
+      #app-launch-splash {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(
+            circle at 50% 30%,
+            rgba(255, 255, 255, 0.10),
+            transparent 55%
+          ),
+          #F74000;
+        opacity: 1;
+        visibility: visible;
+        transition:
+          opacity 320ms ease,
+          visibility 320ms ease;
+      }
+
+      #app-launch-splash[data-state="hidden"] {
+        opacity: 0;
+        visibility: hidden;
+      }
+
+      .launch-splash__content {
+        display: grid;
+        place-items: center;
+        animation: launch-splash-enter 560ms cubic-bezier(0.22, 1, 0.36, 1);
+      }
+
+      .launch-splash__mark {
+        width: 140px;
+        height: 140px;
+        object-fit: contain;
+        filter: drop-shadow(0 8px 28px rgba(0, 0, 0, 0.25));
+        animation: launch-splash-float 2.2s ease-in-out infinite;
+      }
+
+      @keyframes launch-splash-enter {
+        0% {
+          opacity: 0;
+          transform: translateY(14px) scale(0.95);
+        }
+
+        100% {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      @keyframes launch-splash-float {
+        0%,
+        100% {
+          transform: translateY(0);
+        }
+
+        50% {
+          transform: translateY(-6px);
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        #app-launch-splash {
+          transition:
+            opacity 320ms ease,
+            visibility 320ms ease;
+        }
+
+        .launch-splash__content,
+        .launch-splash__mark {
+          animation: none !important;
+        }
+      }
+    </style>
   </head>
   <body>
+    <div id="app-launch-splash" aria-label="Treino está cargando" role="status">
+      <div class="launch-splash__content">
+        <img
+          alt="Treino"
+          class="launch-splash__mark"
+          src="/icons/logoTreinoPNG.png"
+        />
+      </div>
+    </div>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
-  </html>
+</html>

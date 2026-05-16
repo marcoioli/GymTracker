@@ -25,7 +25,6 @@ export function ConfirmWorkoutDayModal({ routine, onClose, onConfirm }: ConfirmW
   return (
     <div className="modal-backdrop" role="presentation" onClick={onClose}>
       <div
-        aria-describedby="confirm-workout-day-description"
         aria-labelledby="confirm-workout-day-title"
         aria-modal="true"
         className="modal-sheet"
@@ -38,15 +37,16 @@ export function ConfirmWorkoutDayModal({ routine, onClose, onConfirm }: ConfirmW
             <h2 className="section-title" id="confirm-workout-day-title">
               Confirmá el día
             </h2>
-            <p className="empty-note" id="confirm-workout-day-description">
-              Te sugerimos el próximo paso según tu progreso, pero podés cambiarlo antes de arrancar.
-            </p>
           </div>
 
           <button aria-label="Cerrar confirmación" className="ghost-button" type="button" onClick={onClose}>
             Cerrar
           </button>
         </div>
+
+        <Button fullWidth size="touch" onClick={() => onConfirm({ weekIndex: selectedOption.weekIndex, dayId: selectedOption.day.id })}>
+          Iniciar {selectedOption.day.label}
+        </Button>
 
         <div className="day-option-list" role="radiogroup" aria-label="Días disponibles para iniciar sesión">
           {suggestedDay ? (
@@ -78,9 +78,6 @@ export function ConfirmWorkoutDayModal({ routine, onClose, onConfirm }: ConfirmW
           ) : null}
         </div>
 
-        <Button fullWidth size="touch" onClick={() => onConfirm({ weekIndex: selectedOption.weekIndex, dayId: selectedOption.day.id })}>
-          Iniciar {selectedOption.day.label}
-        </Button>
       </div>
     </div>
   )
