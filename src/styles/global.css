@@ -2165,6 +2165,12 @@ body {
 	color: var(--design-text-muted);
 }
 
+.tracker-focus-card__badge {
+  padding: 0 12px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
 .tracker-focus-card__stats,
 .tracker-history-card__metrics,
 .track-workout-hero__stats {
